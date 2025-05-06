@@ -1,0 +1,1841 @@
+{% extends 'base.html' %}
+
+{% block title %}Produtos - Controle de Estoque{% endblock %}
+
+{% block page_title %}<span style="font-weight: 700; color: #007bff;"><i class="fas fa-box-open me-2"></i>Produtos</span>{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex">
+    <button type="button" class="btn btn-primary me-2" id="btnNovoProduto" data-bs-toggle="modal" data-bs-target="#novoProdutoModal">
+        <i class="fas fa-plus-circle me-1"></i>Novo Produto
+    </button>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-1"></i>Voltar
+    </a>
+</div>
+{% endblock %}
+
+{% block head_extras %}
+<style>
+    /* Estilos para os componentes de produto */
+    .produto-componentes-container {
+        background-color: #f8f9fc;
+        border-radius: 5px;
+        margin-top: 8px;
+        padding: 10px;
+        border-left: 4px solid #4e73df;
+    }
+    
+    /* Animação de shake para campos com erro */
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+        20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+    
+    /* Estilo para campo de entrada com erro */
+    .input-error-container {
+        position: relative;
+    }
+    
+    .input-error-icon {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #dc3545;
+        font-size: 18px;
+        z-index: 5;
+        background-color: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .produto-componentes-header {
+        font-weight: 600;
+        color: #4e73df;
+        margin-bottom: 5px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .produto-componentes-body {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-out;
+    }
+    
+    .produto-componentes-body.expanded {
+        max-height: 500px;
+        overflow-y: auto;
+    }
+    
+    .produto-componente-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px;
+        border-bottom: 1px solid #e3e6f0;
+    }
+    
+    .produto-componente-item:last-child {
+        border-bottom: none;
+    }
+    
+    .toggle-componentes-btn {
+        background: none;
+        border: none;
+        color: #4e73df;
+        cursor: pointer;
+        padding: 0 5px;
+    }
+    
+    .toggle-componentes-btn:hover {
+        color: #2e59d9;
+    }
+    
+    .delete-componente-btn {
+        color: #e74a3b;
+        cursor: pointer;
+        background: none;
+        border: none;
+        padding: 0 5px;
+        margin-left: 5px;
+    }
+    
+    .delete-componente-btn:hover {
+        color: #be392d;
+    }
+    
+    /* Estilos para a tabela de produtos */
+    .table-responsive {
+        -ms-overflow-style: auto; /* IE e Edge */
+        scrollbar-width: thin; /* Firefox */
+        overflow-x: auto !important; 
+        overflow-y: hidden !important;
+        max-height: none !important;
+    }
+    
+    #tabelaProdutos {
+        border-collapse: collapse;
+        width: 100%;
+        margin-bottom: 0;
+        min-width: 1000px; /* Garantir largura mínima para forçar rolagem quando necessário */
+    }
+    
+    #tabelaProdutos thead tr {
+        background-color: #007bff;
+        color: white;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+    
+    #tabelaProdutos th,
+    #tabelaProdutos td {
+        padding: 12px 16px;
+        text-align: left;
+        border: 1px solid #e3e6f0;
+    }
+    
+    #tabelaProdutos tbody tr:nth-child(even) {
+        background-color: #f8f9fc;
+    }
+    
+    #tabelaProdutos tbody tr:hover {
+        background-color: #eaecf4;
+    }
+    
+    /* Estilos para os ícones de ação */
+    .text-primary, .text-danger {
+        font-size: 1.2rem;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+    
+    .text-primary:hover {
+        background-color: rgba(0, 123, 255, 0.1);
+    }
+    
+    .text-danger:hover {
+        background-color: rgba(220, 53, 69, 0.1);
+    }
+    
+    /* Garante que o tbody não cause rolagem */
+    #tabelaProdutos tbody {
+        overflow: visible !important;
+        max-height: none !important;
+    }
+    
+    /* Estilo para títulos de cards */
+    .card-header h5 {
+        font-weight: 700;
+    }
+    
+    /* Estilo para os cabeçalhos de colunas */
+    #tabelaProdutos th {
+        font-weight: 600;
+        vertical-align: middle;
+    }
+    
+    .card-container {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+        margin-bottom: 25px;
+    }
+    
+    /* Estilos para barra de rolagem */
+    .table-responsive::-webkit-scrollbar {
+        height: 8px; /* Altura da barra de rolagem horizontal */
+        display: block;
+    }
+    
+    .table-responsive::-webkit-scrollbar-thumb {
+        background-color: #c1c1c1;
+        border-radius: 4px;
+    }
+    
+    .table-responsive::-webkit-scrollbar-track {
+        background-color: #f1f1f1;
+    }
+    
+    /* Estilos para a paginação */
+    .pagination {
+        margin-bottom: 0;
+    }
+    
+    .pagination .page-item .page-link {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+        line-height: 1.25;
+        border: 1px solid #dee2e6;
+        color: #007bff;
+    }
+    
+    .pagination .page-item.active .page-link {
+        background-color: #007bff;
+        border-color: #007bff;
+        color: white;
+        font-weight: 500;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    
+    .pagination .page-item.disabled .page-link {
+        color: #6c757d;
+        background-color: #fff;
+        border-color: #dee2e6;
+    }
+    
+    .pagination .page-item:not(.active):not(.disabled) .page-link:hover {
+        background-color: #e9ecef;
+        border-color: #dee2e6;
+        color: #0056b3;
+    }
+    
+    /* Estilos para a busca de clientes */
+    .cliente-suggestion {
+        padding: 8px 12px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .cliente-suggestion:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .cliente-suggestion.active {
+        background-color: #e9ecef;
+    }
+    
+    .cliente-suggestion:last-child {
+        border-bottom: none;
+    }
+    
+    /* Estilos para ordenação */
+    .sortable {
+        cursor: pointer;
+        position: relative;
+        padding-right: 25px !important;
+    }
+    
+    .sortable:after,
+    .sortable:before {
+        content: '';
+        position: absolute;
+        right: 10px;
+        width: 0;
+        height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        opacity: 0.3;
+    }
+    
+    .sortable:before {
+        border-bottom: 5px solid #fff;
+        top: calc(50% - 8px);
+    }
+    
+    .sortable:after {
+        border-top: 5px solid #fff;
+        top: calc(50% + 1px);
+    }
+    
+    .sortable.asc:before,
+    .sortable.desc:after {
+        opacity: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Buscador -->
+<div class="card mb-4">
+    <div class="card-body py-3">
+        <form id="formBuscaProdutos" class="row g-2 align-items-end">
+            <div class="col-md-5">
+                <label for="searchProduto" class="form-label mb-1" style="font-size: 14.4px; font-weight: bold;">Buscar por nome:</label>
+                <input type="text" class="form-control" id="searchProduto" placeholder="Digite o nome do produto...">
+            </div>
+            <div class="col-md-5">
+                <label for="searchCliente" class="form-label mb-1" style="font-size: 14.4px; font-weight: bold;">Filtrar por cliente:</label>
+                <input type="text" class="form-control" id="searchCliente" placeholder="Digite o nome do cliente...">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search me-1"></i>Buscar
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <script>
+        // Script inline para funcionalidade de busca
+        document.getElementById('formBuscaProdutos').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            var termoProduto = document.getElementById('searchProduto').value.toLowerCase().trim();
+            var termoCliente = document.getElementById('searchCliente').value.toLowerCase().trim();
+            var linhasTabela = document.querySelectorAll('#tabelaProdutos tbody tr');
+            var contadorResultados = document.getElementById('contadorResultados');
+            var resultadoBusca = document.getElementById('resultadoBusca');
+            var filtrosAplicados = document.getElementById('filtrosAplicados');
+            var produtoBadge = document.getElementById('produtoBadge');
+            var clienteBadge = document.getElementById('clienteBadge');
+            
+            var matchCount = 0;
+            
+            // Filtrar as linhas
+            linhasTabela.forEach(function(linha) {
+                var textoProduto = linha.querySelector('td:nth-child(1)').textContent.toLowerCase();
+                var textoCliente = linha.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                
+                var matchProduto = termoProduto === '' || textoProduto.includes(termoProduto);
+                var matchCliente = termoCliente === '' || textoCliente.includes(termoCliente);
+                
+                if (matchProduto && matchCliente) {
+                    linha.style.display = '';
+                    matchCount++;
+                } else {
+                    linha.style.display = 'none';
+                }
+            });
+            
+            // Mostrar resultado da busca
+            if (resultadoBusca) {
+                resultadoBusca.style.display = 'flex';
+                
+                if (contadorResultados) {
+                    contadorResultados.textContent = matchCount;
+                }
+                
+                // Mostrar filtros aplicados se houver
+                if (filtrosAplicados) {
+                    var temFiltros = termoProduto !== '' || termoCliente !== '';
+                    filtrosAplicados.style.display = temFiltros ? 'block' : 'none';
+                    
+                    if (produtoBadge) {
+                        if (termoProduto !== '') {
+                            produtoBadge.textContent = 'Produto: "' + termoProduto + '"';
+                            produtoBadge.style.display = 'inline-block';
+                        } else {
+                            produtoBadge.style.display = 'none';
+                        }
+                    }
+                    
+                    if (clienteBadge) {
+                        if (termoCliente !== '') {
+                            clienteBadge.textContent = 'Cliente: "' + termoCliente + '"';
+                            clienteBadge.style.display = 'inline-block';
+                        } else {
+                            clienteBadge.style.display = 'none';
+                        }
+                    }
+                }
+            }
+            
+            // Reiniciar a paginação após a filtragem
+            if (window.paginacaoProdutos) {
+                window.paginacaoProdutos.atualizarPaginacao(matchCount);
+            }
+        });
+        
+        // Botão limpar filtros
+        document.getElementById('limparFiltros').addEventListener('click', function() {
+            // Limpar campos
+            document.getElementById('searchProduto').value = '';
+            document.getElementById('searchCliente').value = '';
+            
+            // Mostrar todas as linhas da tabela
+            var linhasTabela = document.querySelectorAll('#tabelaProdutos tbody tr');
+            linhasTabela.forEach(function(linha) {
+                linha.style.display = '';
+            });
+            
+            // Ocultar seção de resultados
+            document.getElementById('resultadoBusca').style.display = 'none';
+            
+            // Reiniciar a paginação
+            if (window.paginacaoProdutos) {
+                window.paginacaoProdutos.atualizarPaginacao(linhasTabela.length);
+                window.paginacaoProdutos.irParaPagina(1);
+            }
+        });
+        
+        // Inicializar paginação após o carregamento do DOM
+        document.addEventListener('DOMContentLoaded', function() {
+            var linhasTabela = document.querySelectorAll('#tabelaProdutos tbody tr');
+            var paginacao = document.getElementById('paginacaoProdutos');
+            
+            if (linhasTabela.length > 0 && paginacao) {
+                window.paginacaoProdutos = inicializarPaginacao(linhasTabela, paginacao, 10);
+            }
+        });
+    </script>
+</div>
+
+<div class="table-container">
+    <div id="resultadoBusca" class="d-flex justify-content-between align-items-center mb-3" style="display: none;">
+        <p class="mb-0"><span id="contadorResultados"></span> Produto(s) encontrado(s)</p>
+        <p class="mb-0" id="filtrosAplicados" style="display: none;">
+            <span id="produtoBadge" class="badge bg-info" style="display: none;"></span>
+            <span id="clienteBadge" class="badge bg-info ms-1" style="display: none;"></span>
+            <button id="limparFiltros" class="btn btn-sm btn-outline-secondary ms-2">Limpar filtros</button>
+        </p>
+    </div>
+    
+    <!-- Lista de Produtos -->
+    {% if produtos %}
+    <div class="card">
+        <div class="card-header bg-light">
+            <h5 class="mb-0" style="color: #007bff;"><i class="fas fa-list me-2"></i>Lista de Produtos</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="tabelaProdutos">
+                    <thead class="table-primary">
+                        <tr>
+                            <th width="35%" class="border-end sortable" data-sort="nome">Nome</th>
+                            <th width="30%" class="border-end sortable" data-sort="cliente">Cliente</th>
+                            <th width="20%" class="border-end">Componentes</th>
+                            <th width="15%" class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for produto in produtos %}
+                        <tr data-produto-id="{{ produto.id }}">
+                            <td class="border-end">{{ produto.nome }}</td>
+                            <td class="border-end">{{ produto.descricao }}</td>
+                            <td class="border-end">
+                                <button type="button" class="btn btn-sm btn-info ver-componentes" data-produto-id="{{ produto.id }}">
+                                    <i class="fas fa-list"></i> Ver componentes
+                                </button>
+                                <div class="produto-componentes-container" id="componentes-{{ produto.id }}" style="display: none;">
+                                    <div class="produto-componentes-header">
+                                        <span>Componentes Utilizados</span>
+                                        <button type="button" class="toggle-componentes-btn" data-produto-id="{{ produto.id }}">
+                                            <i class="fas fa-chevron-down"></i>
+                                        </button>
+                                        </div>
+                                    
+                                            {% if produto.componentes %}
+                                                {% for componente in produto.componentes %}
+                                        <div class="produto-componente-item">
+                                            <div>
+                                                <strong>{{ componente.nome }}</strong> 
+                                                <span class="badge bg-secondary">x{{ componente.quantidade }}</span>
+                                            </div>
+                                                </div>
+                                                {% endfor %}
+                                            {% else %}
+                                        <div class="alert alert-warning mb-0">
+                                            Nenhum componente associado a este produto.
+                                        </div>
+                                            {% endif %}
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <div class="d-flex justify-content-center gap-2">
+                                    <a href="#" class="action-icon edit-icon edit-produto" data-produto-id="{{ produto.id }}" title="Editar">
+                                        <i class="fa fa-edit"></i>
+                                    </a>
+                                    <a href="#" class="action-icon delete-icon delete-produto" data-produto-id="{{ produto.id }}" data-produto-nome="{{ produto.nome }}" title="Excluir">
+                                        <i class="fa fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="badge bg-primary">Total: {{ produtos|length }}</span>
+            <nav aria-label="Navegação de páginas">
+                    <ul class="pagination justify-content-center mb-0" id="paginacaoProdutos">
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" aria-label="Anterior">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link" href="#">&raquo;</a></li>
+                </ul>
+            </nav>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>Nenhum produto cadastrado ainda.
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal de Confirmação para Excluir Produto -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="confirmDeleteModalLabel"><i class="fas fa-exclamation-triangle me-2"></i>Confirmar Exclusão</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <p>Você tem certeza que deseja excluir o produto <strong id="deleteProdutoNome"></strong>?</p>
+                <p class="text-danger"><i class="fas fa-exclamation-circle"></i> Esta ação não pode ser desfeita!</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Excluir</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Formulário oculto para exclusão de produto -->
+<form id="deleteProductForm" method="post" style="display: none;">
+</form>
+
+<!-- Modal de Adicionar Produto -->
+<div class="modal fade" id="novoProdutoModal" tabindex="-1" aria-labelledby="novoProdutoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="novoProdutoModalLabel"><i class="fas fa-plus-circle me-2"></i>Adicionar Novo Produto</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-alert-container"></div>
+                <form id="form-produto" method="post" action="{{ url_for('adicionar_produto') }}">
+                    <div class="mb-3">
+                        <label for="nome" class="form-label">Nome do Produto</label>
+                        <div class="input-error-container">
+                        <input type="text" class="form-control" id="nome" name="nome" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="descricao" class="form-label">Cliente</label>
+                        <div class="cliente-search-container position-relative">
+                            <input type="text" class="form-control" id="descricao" name="descricao" autocomplete="off">
+                            <div id="cliente-suggestions" class="cliente-suggestions shadow-sm rounded position-absolute d-none" style="width: 100%; z-index: 1000; max-height: 200px; overflow-y: auto; background-color: white; border: 1px solid #ced4da;"></div>
+                        </div>
+                        <small class="form-text text-muted">Digite para buscar ou adicionar um novo cliente</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Componentes</label>
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-5">
+                                        <div class="componente-search-container position-relative">
+                                            <input type="text" class="form-control" id="componente-search" placeholder="Buscar componente..." autocomplete="off">
+                                            <div id="componente-suggestions" class="cliente-suggestions shadow-sm rounded position-absolute d-none" style="width: 100%; z-index: 1000; max-height: 200px; overflow-y: auto; background-color: white; border: 1px solid #ced4da;"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="number" class="form-control" id="quantidade-componente" placeholder="Quantidade" min="1" value="1">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button type="button" class="btn btn-success w-100 d-flex align-items-center justify-content-center" id="adicionar-componente" style="height: 38px;">
+                                            <i class="fas fa-plus-circle me-2"></i><span>Adicionar</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="table-responsive">
+                                    <table class="table table-striped" id="tabela-componentes">
+                                        <thead>
+                                            <tr>
+                                                <th>Código</th>
+                                                <th>Nome</th>
+                                                <th>Quantidade</th>
+                                                <th>Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="componentes-lista">
+                                            <!-- Lista de componentes adicionados -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <div class="alert alert-info mt-3" id="sem-componentes">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Nenhum componente adicionado ao produto.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <input type="hidden" name="componentes_json" id="componentes-json" value="[]">
+                    
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnSalvarProduto">
+                    <i class="fas fa-save me-1"></i> Salvar Produto
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Editar Produto -->
+<div class="modal fade" id="editarProdutoModal" tabindex="-1" aria-labelledby="editarProdutoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="editarProdutoModalLabel"><i class="fas fa-edit me-2"></i>Editar Produto</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-edit-alert-container"></div>
+                <form id="form-editar-produto" method="post">
+                    <input type="hidden" id="edit-produto-id" name="produto_id">
+                    <div class="mb-3">
+                        <label for="edit-nome" class="form-label">Nome do Produto</label>
+                        <input type="text" class="form-control" id="edit-nome" name="nome" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-descricao" class="form-label">Cliente</label>
+                        <div class="cliente-search-container position-relative">
+                            <input type="text" class="form-control" id="edit-descricao" name="descricao" autocomplete="off">
+                            <div id="edit-cliente-suggestions" class="cliente-suggestions shadow-sm rounded position-absolute d-none" style="width: 100%; z-index: 1000; max-height: 200px; overflow-y: auto; background-color: white; border: 1px solid #ced4da;"></div>
+                        </div>
+                        <small class="form-text text-muted">Digite para buscar ou adicionar um novo cliente</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Componentes</label>
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-5">
+                                        <div class="componente-search-container position-relative">
+                                            <input type="text" class="form-control" id="edit-componente-search" placeholder="Buscar componente..." autocomplete="off">
+                                            <div id="edit-componente-suggestions" class="cliente-suggestions shadow-sm rounded position-absolute d-none" style="width: 100%; z-index: 1000; max-height: 200px; overflow-y: auto; background-color: white; border: 1px solid #ced4da;"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="number" class="form-control" id="edit-quantidade-componente" placeholder="Quantidade" min="1" value="1">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button type="button" class="btn btn-success w-100 d-flex align-items-center justify-content-center" id="edit-adicionar-componente" style="height: 38px;">
+                                            <i class="fas fa-plus-circle me-2"></i><span>Adicionar</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="table-responsive">
+                                    <table class="table table-striped" id="edit-tabela-componentes">
+                                        <thead>
+                                            <tr>
+                                                <th>Código</th>
+                                                <th>Nome</th>
+                                                <th>Quantidade</th>
+                                                <th>Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="edit-componentes-lista">
+                                            <!-- Lista de componentes adicionados -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <div class="alert alert-info mt-3" id="edit-sem-componentes">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Nenhum componente adicionado ao produto.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <input type="hidden" name="componentes_json" id="edit-componentes-json" value="[]">
+                    
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnSalvarEdicaoProduto">
+                    <i class="fas fa-save me-1"></i> Salvar Alterações
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Verificar se há produto adicionado no sessionStorage
+        if (sessionStorage.getItem('product_added') === 'true') {
+            // Limpar o flag imediatamente
+            sessionStorage.removeItem('product_added');
+            
+            // Criar alerta de sucesso
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show';
+            alertDiv.role = 'alert';
+            alertDiv.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i> Produto adicionado com sucesso!
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+            `;
+            
+            // Inserir no início da página
+            const container = document.querySelector('.container');
+            if (container) {
+                // Inserir antes de qualquer alerta existente ou como primeiro filho
+                const existingAlert = container.querySelector('.alert');
+                if (existingAlert) {
+                    container.insertBefore(alertDiv, existingAlert);
+                } else {
+                    container.insertBefore(alertDiv, container.firstChild);
+                }
+                
+                // Configurar para esconder automaticamente após 5 segundos
+                setTimeout(() => {
+                    try {
+                        const bsAlert = new bootstrap.Alert(alertDiv);
+                        bsAlert.close();
+                    } catch (e) {
+                        // Fallback se o bootstrap Alert não estiver disponível
+                        alertDiv.style.display = 'none';
+                    }
+                }, 5000);
+            }
+        }
+        
+        // Verificar se há produto editado no sessionStorage
+        if (sessionStorage.getItem('product_edited') === 'true') {
+            // Limpar o flag imediatamente
+            sessionStorage.removeItem('product_edited');
+            
+            // Criar alerta de sucesso
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show';
+            alertDiv.role = 'alert';
+            alertDiv.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i> Produto atualizado com sucesso!
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+            `;
+            
+            // Inserir no início da página
+            const container = document.querySelector('.container');
+            if (container) {
+                // Inserir antes de qualquer alerta existente ou como primeiro filho
+                const existingAlert = container.querySelector('.alert');
+                if (existingAlert) {
+                    container.insertBefore(alertDiv, existingAlert);
+                } else {
+                    container.insertBefore(alertDiv, container.firstChild);
+                }
+                
+                // Configurar para esconder automaticamente após 5 segundos
+                setTimeout(() => {
+                    try {
+                        const bsAlert = new bootstrap.Alert(alertDiv);
+                        bsAlert.close();
+                    } catch (e) {
+                        // Fallback se o bootstrap Alert não estiver disponível
+                        alertDiv.style.display = 'none';
+                    }
+                }, 5000);
+            }
+        }
+        
+        // Configuração da paginação - mostrar apenas 10 itens por página
+        const itemsPorPagina = 10;
+        let paginaAtual = 1;
+        const tabela = document.getElementById('tabelaProdutos');
+        
+        if (tabela) {
+            const linhas = Array.from(tabela.querySelectorAll('tbody tr'));
+            const paginacao = document.getElementById('paginacaoProdutos');
+            
+            // Aplicar paginação inicial - esconder linhas após a décima
+            if (linhas.length > itemsPorPagina) {
+                linhas.forEach((linha, index) => {
+                    if (index >= itemsPorPagina) {
+                        linha.style.display = 'none';
+                    }
+                });
+            }
+            
+            if (paginacao) {
+                inicializarPaginacao(linhas, paginacao);
+            }
+            
+            // Função para inicializar paginação
+            function inicializarPaginacao(linhas, paginacaoElement) {
+                // Função para mostrar apenas as linhas da página atual
+                function mostrarLinhas() {
+                    // Ocultar todas as linhas
+                    linhas.forEach(linha => { 
+                        linha.style.display = 'none'; 
+                    });
+                    
+                    // Calcular os índices das linhas a mostrar
+                    const inicio = (paginaAtual - 1) * itemsPorPagina;
+                    const fim = Math.min(inicio + itemsPorPagina, linhas.length);
+                    
+                    // Mostrar apenas as linhas da página atual
+                    for (let i = inicio; i < fim; i++) {
+                        linhas[i].style.display = '';
+                    }
+                    
+                    // Atualizar a paginação
+                    atualizarPaginacao();
+                }
+                
+                // Função para atualizar os controles de paginação
+                function atualizarPaginacao() {
+                    const totalPaginas = Math.ceil(linhas.length / itemsPorPagina);
+                    paginacaoElement.innerHTML = '';
+                    
+                    // Botão Anterior
+                    const itemAnterior = document.createElement('li');
+                    itemAnterior.className = `page-item ${paginaAtual === 1 ? 'disabled' : ''}`;
+                    
+                    const linkAnterior = document.createElement('a');
+                    linkAnterior.className = 'page-link';
+                    linkAnterior.href = '#';
+                    linkAnterior.innerHTML = '&laquo;';
+                    linkAnterior.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        if (paginaAtual > 1) {
+                            paginaAtual--;
+                            mostrarLinhas();
+                        }
+                    });
+                    
+                    itemAnterior.appendChild(linkAnterior);
+                    paginacaoElement.appendChild(itemAnterior);
+                    
+                    // Números das páginas
+                    for (let i = 1; i <= totalPaginas; i++) {
+                        const item = document.createElement('li');
+                        item.className = `page-item ${i === paginaAtual ? 'active' : ''}`;
+                        
+                        const link = document.createElement('a');
+                        link.className = 'page-link';
+                        link.href = '#';
+                        link.textContent = i;
+                        link.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            paginaAtual = i;
+                            mostrarLinhas();
+                        });
+                        
+                        item.appendChild(link);
+                        paginacaoElement.appendChild(item);
+                    }
+                    
+                    // Botão Próximo
+                    const itemProximo = document.createElement('li');
+                    itemProximo.className = `page-item ${paginaAtual === totalPaginas ? 'disabled' : ''}`;
+                    
+                    const linkProximo = document.createElement('a');
+                    linkProximo.className = 'page-link';
+                    linkProximo.href = '#';
+                    linkProximo.innerHTML = '&raquo;';
+                    linkProximo.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        if (paginaAtual < totalPaginas) {
+                            paginaAtual++;
+                            mostrarLinhas();
+                        }
+                    });
+                    
+                    itemProximo.appendChild(linkProximo);
+                    paginacaoElement.appendChild(itemProximo);
+                }
+                
+                // Inicializar a paginação
+                mostrarLinhas();
+            }
+        }
+        
+        // Adicionar funcionalidade de ordenação às colunas
+        const thSortables = document.querySelectorAll('#tabelaProdutos th.sortable');
+        thSortables.forEach(th => {
+            th.addEventListener('click', function() {
+                const campo = this.getAttribute('data-sort');
+                ordenarTabela(campo);
+            });
+        });
+        
+        // Função para ordenar tabela
+        function ordenarTabela(campo) {
+            const tabela = document.getElementById('tabelaProdutos');
+            const thead = tabela.querySelector('thead');
+            const tbody = tabela.querySelector('tbody');
+            const linhas = Array.from(tbody.querySelectorAll('tr'));
+            
+            // Determinar a direção da ordenação
+            const th = thead.querySelector(`th[data-sort="${campo}"]`);
+            const direcaoAtual = th.classList.contains('asc') ? 'desc' : 'asc';
+            
+            // Remover classes de ordenação de todos os cabeçalhos
+            thead.querySelectorAll('th.sortable').forEach(header => {
+                header.classList.remove('asc', 'desc');
+            });
+            
+            // Adicionar classe de ordenação ao cabeçalho atual
+            th.classList.add(direcaoAtual);
+            
+            // Ordenar as linhas
+            linhas.sort((a, b) => {
+                let valorA, valorB;
+                
+                if (campo === 'nome') {
+                    valorA = a.cells[0].textContent.trim();
+                    valorB = b.cells[0].textContent.trim();
+                } else if (campo === 'cliente') {
+                    valorA = a.cells[1].textContent.trim();
+                    valorB = b.cells[1].textContent.trim();
+                }
+                
+                // Comparação de string
+                if (direcaoAtual === 'asc') {
+                    return valorA.localeCompare(valorB, 'pt-BR');
+                } else {
+                    return valorB.localeCompare(valorA, 'pt-BR');
+                }
+            });
+            
+            // Remover todas as linhas da tabela
+            while (tbody.firstChild) {
+                tbody.removeChild(tbody.firstChild);
+            }
+            
+            // Adicionar as linhas reordenadas
+            linhas.forEach(linha => {
+                tbody.appendChild(linha);
+            });
+            
+            // Recriar a paginação
+            if (window.paginacaoProdutos) {
+                window.paginacaoProdutos = inicializarPaginacao(linhas, document.getElementById('paginacaoProdutos'), 10);
+            }
+        }
+        
+        // Script para expandir/recolher os componentes na tabela
+        const verComponentesBtns = document.querySelectorAll('.ver-componentes');
+        verComponentesBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const produtoId = this.getAttribute('data-produto-id');
+                const componentesContainer = document.getElementById('componentes-' + produtoId);
+                
+                if (componentesContainer.style.display === 'none') {
+                    componentesContainer.style.display = 'block';
+                } else {
+                    componentesContainer.style.display = 'none';
+                }
+            });
+        });
+        
+        // Event listeners para o botão de excluir produto
+        document.querySelectorAll('.delete-produto').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const produtoId = this.getAttribute('data-produto-id');
+                const produtoNome = this.getAttribute('data-produto-nome');
+                
+                document.getElementById('deleteProdutoNome').textContent = produtoNome;
+                const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+                
+                confirmDeleteBtn.setAttribute('data-produto-id', produtoId);
+                
+                // Abrir o modal de confirmação
+                const modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+                modal.show();
+            });
+        });
+        
+        // Botão de confirmar exclusão
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        if (confirmDeleteBtn) {
+            confirmDeleteBtn.addEventListener('click', function() {
+                const produtoId = this.getAttribute('data-produto-id');
+                document.getElementById('deleteProductForm').action = `/produtos/excluir/${produtoId}`;
+                document.getElementById('deleteProductForm').submit();
+            });
+        }
+
+        // Array para armazenar os componentes do produto
+        let componentesLista = [];
+        
+        // Dados dos componentes para referência rápida
+        const componentesDataJson = '{{ componentes|tojson|safe }}';
+        let componentesData = {};
+        
+        // Parse the JSON data and convert to our format
+        try {
+            const componentesArray = JSON.parse(componentesDataJson);
+            componentesArray.forEach(comp => {
+                componentesData[comp.codigo] = {
+                    codigo: comp.codigo,
+                    nome: comp.nome
+                };
+            });
+        } catch (e) {
+            console.error('Error parsing componentes data:', e);
+        }
+        
+        // Função para atualizar a lista de componentes na tabela
+        function atualizarListaComponentes() {
+            const tbody = document.getElementById('componentes-lista');
+            const semComponentesMsg = document.getElementById('sem-componentes');
+            
+            // Limpa a tabela
+            tbody.innerHTML = '';
+            
+            // Atualiza o JSON hidden field
+            document.getElementById('componentes-json').value = JSON.stringify(componentesLista);
+            
+            // Mostra/esconde a mensagem "sem componentes"
+            if (componentesLista.length === 0) {
+                semComponentesMsg.style.display = 'block';
+                return;
+            }
+            
+            semComponentesMsg.style.display = 'none';
+            
+            // Adiciona os componentes na tabela
+            componentesLista.forEach((componente, index) => {
+                const tr = document.createElement('tr');
+                
+                tr.innerHTML = `
+                    <td>${componente.codigo}</td>
+                    <td>${componente.nome}</td>
+                    <td>${componente.quantidade}</td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-danger remover-componente" data-index="${index}">
+                            <i class="fas fa-trash"></i> Remover
+                        </button>
+                    </td>
+                `;
+                
+                tbody.appendChild(tr);
+            });
+            
+            // Adiciona evento aos botões de remover
+            document.querySelectorAll('#componentes-lista .remover-componente').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    removerComponente(index);
+                });
+            });
+        }
+        
+        // Função para remover um componente da lista
+        function removerComponente(index) {
+            componentesLista.splice(index, 1);
+            atualizarListaComponentes();
+        }
+        
+        // Cliente Search Functionality
+        const clienteInput = document.getElementById('descricao');
+        const clienteSuggestions = document.getElementById('cliente-suggestions');
+        let debounceTimer;
+
+        // Adicionar validação ao campo de nome do produto
+        const nomeInput = document.getElementById('nome');
+        if (nomeInput) {
+            nomeInput.addEventListener('blur', function() {
+                // Remover validação no evento blur
+            });
+            
+            // Limpar a mensagem de erro quando o usuário começar a editar
+            nomeInput.addEventListener('input', function() {
+                document.getElementById('modal-alert-container').innerHTML = '';
+                this.classList.remove('is-invalid', 'border-danger');
+                
+                // Remover o ícone de erro se existir
+                const inputContainer = this.parentElement;
+                const errorIcon = inputContainer.querySelector('.input-error-icon');
+                if (errorIcon) {
+                    inputContainer.removeChild(errorIcon);
+                }
+            });
+            
+            // Limpar a mensagem de erro quando o usuário clicar no campo
+            nomeInput.addEventListener('focus', function() {
+                document.getElementById('modal-alert-container').innerHTML = '';
+                this.classList.remove('is-invalid', 'border-danger');
+                
+                // Remover o ícone de erro se existir
+                const inputContainer = this.parentElement;
+                const errorIcon = inputContainer.querySelector('.input-error-icon');
+                if (errorIcon) {
+                    inputContainer.removeChild(errorIcon);
+                }
+            });
+        }
+
+        if (clienteInput && clienteSuggestions) {
+            // Add input event listener with debounce
+            clienteInput.addEventListener('input', function() {
+                clearTimeout(debounceTimer);
+                const inputValue = this.value.trim();
+                
+                // Clear suggestions if input is empty
+                if (inputValue.length < 2) {
+                    clienteSuggestions.innerHTML = '';
+                    clienteSuggestions.classList.add('d-none');
+                    return;
+                }
+                
+                // Debounce to avoid too many requests
+                debounceTimer = setTimeout(() => {
+                    fetch(`/api/search-clientes?termo=${encodeURIComponent(inputValue)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            clienteSuggestions.innerHTML = '';
+                            
+                            if (data.length > 0) {
+                                data.forEach(cliente => {
+                                    const div = document.createElement('div');
+                                    div.className = 'p-2 cliente-suggestion';
+                                    div.textContent = cliente;
+                                    div.style.cursor = 'pointer';
+                                    div.style.borderBottom = '1px solid #eee';
+                                    div.style.transition = 'background-color 0.2s';
+                                    
+                                    // Highlight the match
+                                    const regex = new RegExp(`(${inputValue})`, 'gi');
+                                    div.innerHTML = cliente.replace(regex, '<strong>$1</strong>');
+                                    
+                                    // Hover effect
+                                    div.addEventListener('mouseover', function() {
+                                        this.style.backgroundColor = '#f8f9fa';
+                                    });
+                                    
+                                    div.addEventListener('mouseout', function() {
+                                        this.style.backgroundColor = 'white';
+                                    });
+                                    
+                                    // Click to select
+                                    div.addEventListener('click', function() {
+                                        clienteInput.value = cliente;
+                                        clienteSuggestions.classList.add('d-none');
+                                    });
+                                    
+                                    clienteSuggestions.appendChild(div);
+                                });
+                                
+                                clienteSuggestions.classList.remove('d-none');
+                } else {
+                                clienteSuggestions.classList.add('d-none');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erro ao buscar clientes:', error);
+                        });
+                }, 300);
+            });
+            
+            // Hide suggestions when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!clienteInput.contains(e.target) && !clienteSuggestions.contains(e.target)) {
+                    clienteSuggestions.classList.add('d-none');
+                }
+            });
+            
+            // Show suggestions when focusing on the input
+            clienteInput.addEventListener('focus', function() {
+                if (this.value.trim().length >= 2) {
+                    clienteSuggestions.classList.remove('d-none');
+                }
+            });
+            
+            // Handle navigation with keyboard
+            clienteInput.addEventListener('keydown', function(e) {
+                const suggestions = clienteSuggestions.querySelectorAll('.cliente-suggestion');
+                if (suggestions.length === 0) return;
+                
+                const active = clienteSuggestions.querySelector('.cliente-suggestion.active');
+                
+                // Arrow down
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (!active) {
+                        suggestions[0].classList.add('active');
+                        suggestions[0].style.backgroundColor = '#e9ecef';
+                    } else {
+                        const nextIndex = Array.from(suggestions).indexOf(active) + 1;
+                        if (nextIndex < suggestions.length) {
+                            active.classList.remove('active');
+                            active.style.backgroundColor = 'white';
+                            suggestions[nextIndex].classList.add('active');
+                            suggestions[nextIndex].style.backgroundColor = '#e9ecef';
+                        }
+                    }
+                }
+                
+                // Arrow up
+                else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (active) {
+                        const prevIndex = Array.from(suggestions).indexOf(active) - 1;
+                        if (prevIndex >= 0) {
+                            active.classList.remove('active');
+                            active.style.backgroundColor = 'white';
+                            suggestions[prevIndex].classList.add('active');
+                            suggestions[prevIndex].style.backgroundColor = '#e9ecef';
+                        }
+                    }
+                }
+                
+                // Enter to select
+                else if (e.key === 'Enter' && active) {
+                    e.preventDefault();
+                    clienteInput.value = active.textContent;
+                    clienteSuggestions.classList.add('d-none');
+                }
+                
+                // Escape to close
+                else if (e.key === 'Escape') {
+                    clienteSuggestions.classList.add('d-none');
+                }
+            });
+        }
+
+        // Componente Search Functionality
+        const componenteInput = document.getElementById('componente-search');
+        const componenteSuggestions = document.getElementById('componente-suggestions');
+        let debounceTimerComponente;
+        let componenteSelecionado = null;
+
+        if (componenteInput && componenteSuggestions) {
+            // Adicionar event listener para input com debounce
+            componenteInput.addEventListener('input', function() {
+                clearTimeout(debounceTimerComponente);
+                const inputValue = this.value.trim();
+                componenteSelecionado = null;
+                
+                // Limpar sugestões se input estiver vazio
+                if (inputValue.length < 2) {
+                    componenteSuggestions.innerHTML = '';
+                    componenteSuggestions.classList.add('d-none');
+                    return;
+                }
+                
+                // Debounce para evitar muitas requisições
+                debounceTimerComponente = setTimeout(() => {
+                    fetch(`/api/search-componentes?termo=${encodeURIComponent(inputValue)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            componenteSuggestions.innerHTML = '';
+                            
+                            if (data.length > 0) {
+                                data.forEach(componente => {
+                                    const div = document.createElement('div');
+                                    div.className = 'p-2 cliente-suggestion';
+                                    div.textContent = `${componente.nome} (${componente.codigo})`;
+                                    div.setAttribute('data-codigo', componente.codigo);
+                                    div.setAttribute('data-nome', componente.nome);
+                                    div.style.cursor = 'pointer';
+                                    div.style.borderBottom = '1px solid #eee';
+                                    div.style.transition = 'background-color 0.2s';
+                                    
+                                    // Destacar correspondência
+                                    const displayText = `${componente.nome} (${componente.codigo})`;
+                                    const regex = new RegExp(`(${inputValue})`, 'gi');
+                                    div.innerHTML = displayText.replace(regex, '<strong>$1</strong>');
+                                    
+                                    // Efeito hover
+                                    div.addEventListener('mouseover', function() {
+                                        this.style.backgroundColor = '#f8f9fa';
+                                    });
+                                    
+                                    div.addEventListener('mouseout', function() {
+                                        this.style.backgroundColor = 'white';
+                                    });
+                                    
+                                    // Clique para selecionar
+                                    div.addEventListener('click', function() {
+                                        componenteInput.value = componente.nome;
+                                        componenteSelecionado = componente.codigo;
+                                        componenteSuggestions.classList.add('d-none');
+                                    });
+                                    
+                                    componenteSuggestions.appendChild(div);
+                                });
+                                
+                                componenteSuggestions.classList.remove('d-none');
+                            } else {
+                                componenteSuggestions.classList.add('d-none');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erro ao buscar componentes:', error);
+                        });
+                }, 300);
+            });
+            
+            // Esconder sugestões ao clicar fora
+            document.addEventListener('click', function(e) {
+                if (!componenteInput.contains(e.target) && !componenteSuggestions.contains(e.target)) {
+                    componenteSuggestions.classList.add('d-none');
+                }
+            });
+            
+            // Mostrar sugestões ao focar no input
+            componenteInput.addEventListener('focus', function() {
+                if (this.value.trim().length >= 2) {
+                    componenteSuggestions.classList.remove('d-none');
+                }
+            });
+            
+            // Navegação por teclado
+            componenteInput.addEventListener('keydown', function(e) {
+                const suggestions = componenteSuggestions.querySelectorAll('.cliente-suggestion');
+                if (suggestions.length === 0) return;
+                
+                const active = componenteSuggestions.querySelector('.cliente-suggestion.active');
+                
+                // Seta para baixo
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (!active) {
+                        suggestions[0].classList.add('active');
+                        suggestions[0].style.backgroundColor = '#e9ecef';
+                    } else {
+                        const nextIndex = Array.from(suggestions).indexOf(active) + 1;
+                        if (nextIndex < suggestions.length) {
+                            active.classList.remove('active');
+                            active.style.backgroundColor = 'white';
+                            suggestions[nextIndex].classList.add('active');
+                            suggestions[nextIndex].style.backgroundColor = '#e9ecef';
+                        }
+                    }
+                }
+                
+                // Seta para cima
+                else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (active) {
+                        const prevIndex = Array.from(suggestions).indexOf(active) - 1;
+                        if (prevIndex >= 0) {
+                            active.classList.remove('active');
+                            active.style.backgroundColor = 'white';
+                            suggestions[prevIndex].classList.add('active');
+                            suggestions[prevIndex].style.backgroundColor = '#e9ecef';
+                }
+                    }
+                }
+                
+                // Enter para selecionar
+                else if (e.key === 'Enter' && active) {
+                    e.preventDefault();
+                    componenteInput.value = active.getAttribute('data-nome');
+                    componenteSelecionado = active.getAttribute('data-codigo');
+                    componenteSuggestions.classList.add('d-none');
+        }
+        
+                // Escape para fechar
+                else if (e.key === 'Escape') {
+                    componenteSuggestions.classList.add('d-none');
+                }
+            });
+        }
+
+        // Evento do botão salvar no modal
+        const btnSalvarProduto = document.getElementById('btnSalvarProduto');
+        if (btnSalvarProduto) {
+            btnSalvarProduto.addEventListener('click', function() {
+                salvarNovoProduto();
+            });
+        }
+        
+        // Adicionar listener para tecla Enter no modal de produtos
+        const novoProdutoModal = document.getElementById('novoProdutoModal');
+        if (novoProdutoModal) {
+            novoProdutoModal.addEventListener('keydown', function(event) {
+                // Verificar se a tecla pressionada é Enter e se não está em um textarea
+                if (event.key === 'Enter' && event.target.tagName !== 'TEXTAREA') {
+                    // Impedir o comportamento padrão do Enter (que poderia enviar o formulário diretamente)
+                    event.preventDefault();
+                    // Chamar a função para salvar o produto
+                    salvarNovoProduto();
+                }
+            });
+            
+            // Limpar o formulário quando o modal for fechado
+            novoProdutoModal.addEventListener('hidden.bs.modal', function () {
+                document.getElementById('form-produto').reset();
+                document.getElementById('modal-alert-container').innerHTML = '';
+                componentesLista = [];
+                atualizarListaComponentes();
+                componenteSelecionado = null;
+            });
+            
+            novoProdutoModal.addEventListener('shown.bs.modal', function () {
+                document.getElementById('nome').focus();
+                document.getElementById('modal-alert-container').innerHTML = '';
+                atualizarListaComponentes();
+            });
+        }
+
+        // Implementação da versão mais completa para adicionar componentes
+        const adicionarComponenteBtn = document.getElementById('adicionar-componente');
+        const quantidadeComponenteInput = document.getElementById('quantidade-componente');
+        
+        // Implementação do botão para adicionar componente
+        if (adicionarComponenteBtn) {
+            adicionarComponenteBtn.addEventListener('click', function() {
+                const quantidade = parseInt(quantidadeComponenteInput.value) || 1;
+                
+                if (quantidade < 1) {
+                    alert('A quantidade deve ser pelo menos 1.');
+                    return;
+                }
+                
+                // Usamos o componenteSelecionado da busca de texto
+                if (componenteSelecionado) {
+                    // Verificar se já existe na lista
+                    const componenteExistente = componentesLista.findIndex(c => c.codigo === componenteSelecionado);
+                    
+                    if (componenteExistente >= 0) {
+                        // Atualiza a quantidade se já existir
+                        componentesLista[componenteExistente].quantidade = quantidade;
+                    } else {
+                        // Adiciona novo componente
+                        componentesLista.push({
+                            codigo: componenteSelecionado,
+                            nome: componenteInput.value,
+                            quantidade: quantidade
+                        });
+                    }
+                    
+                    // Resetar campos
+                    componenteInput.value = '';
+                    componenteSelecionado = null;
+                    quantidadeComponenteInput.value = '1';
+            
+                    // Atualizar a tabela
+                    atualizarListaComponentes();
+                } else {
+                    alert('Por favor, selecione um componente.');
+                }
+            });
+        }
+        
+        // Adicionar Enter para o campo de quantidade de componente
+        if (quantidadeComponenteInput) {
+            quantidadeComponenteInput.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    adicionarComponenteBtn.click();
+                }
+            });
+        }
+        
+        // Adicionar Enter para o campo de busca de componente
+        if (componenteInput) {
+            componenteInput.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter' && componenteSelecionado) {
+                    event.preventDefault();
+                    adicionarComponenteBtn.click();
+                }
+            });
+        }
+
+        function salvarNovoProduto() {
+            const form = document.getElementById('form-produto');
+            const nome = document.getElementById('nome').value.trim();
+            const descricao = document.getElementById('descricao').value.trim();
+            const modalAlertContainer = document.getElementById('modal-alert-container');
+            
+            // Limpar alertas anteriores
+            modalAlertContainer.innerHTML = '';
+            
+            // Função helper para criar popups de erro
+            function criarPopupErro(mensagem, onClose = null) {
+                // Criar o popup de erro
+                const errorPopup = document.createElement('div');
+                errorPopup.style.position = 'fixed';
+                errorPopup.style.top = '0';
+                errorPopup.style.left = '0';
+                errorPopup.style.width = '100%';
+                errorPopup.style.height = '100%';
+                errorPopup.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+                errorPopup.style.display = 'flex';
+                errorPopup.style.justifyContent = 'center';
+                errorPopup.style.alignItems = 'flex-start'; // Alinhar ao topo
+                errorPopup.style.paddingTop = '20px'; // Menos espaço no topo
+                errorPopup.style.zIndex = '9999';
+                
+                const errorContent = document.createElement('div');
+                errorContent.style.backgroundColor = '#212529';
+                errorContent.style.color = 'white';
+                errorContent.style.padding = '20px';
+                errorContent.style.borderRadius = '5px';
+                errorContent.style.maxWidth = '400px';
+                errorContent.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.3)';
+                
+                const errorTitle = document.createElement('div');
+                errorTitle.style.fontSize = '18px';
+                errorTitle.style.marginBottom = '10px';
+                errorTitle.textContent = '127.0.0.1:5000 diz';
+                
+                const errorMessage = document.createElement('div');
+                errorMessage.style.marginBottom = '20px';
+                errorMessage.textContent = mensagem;
+                
+                const errorButton = document.createElement('button');
+                errorButton.className = 'btn btn-primary';
+                errorButton.style.display = 'block';
+                errorButton.style.margin = '0 auto';
+                errorButton.style.backgroundColor = '#2e59d9';
+                errorButton.style.border = 'none';
+                errorButton.style.borderRadius = '5px';
+                errorButton.style.padding = '6px 12px';
+                errorButton.style.width = '60px';
+                errorButton.textContent = 'OK';
+                errorButton.addEventListener('click', function() {
+                    document.body.removeChild(errorPopup);
+                    if (onClose) onClose();
+                });
+                
+                errorContent.appendChild(errorTitle);
+                errorContent.appendChild(errorMessage);
+                errorContent.appendChild(errorButton);
+                errorPopup.appendChild(errorContent);
+                
+                document.body.appendChild(errorPopup);
+            }
+
+            // Validar nome do produto
+            if (!nome) {
+                criarPopupErro('Erro: Por favor, digite o nome do produto.', () => {
+                    document.getElementById('nome').focus();
+                });
+                return;
+            }
+            
+            // Validar se tem componentes
+            if (componentesLista.length === 0) {
+                criarPopupErro('Erro: Adicione pelo menos um componente ao produto.');
+                return;
+            }
+            
+            // Verificar se o nome do produto já existe antes de enviar o formulário
+            fetch(`/api/check_product_name?nome=${encodeURIComponent(nome)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Erro ao verificar nome do produto');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (!data.valid) {
+                        // Se o nome já existe, mostrar erro no modal
+                        modalAlertContainer.innerHTML = ``;
+                        const nomeInput = document.getElementById('nome');
+                        nomeInput.classList.add('is-invalid', 'border-danger');
+                        
+                        // Adicionar ícone de erro
+                        const inputContainer = nomeInput.parentElement;
+                        if (!inputContainer.querySelector('.input-error-icon')) {
+                            const errorIcon = document.createElement('i');
+                            errorIcon.className = 'fas fa-exclamation-circle input-error-icon';
+                            errorIcon.style.backgroundColor = 'transparent';
+                            inputContainer.appendChild(errorIcon);
+                        }
+                        
+                        // Adicionar animação de shake para chamar atenção
+                        nomeInput.style.animation = 'shake 0.5s';
+                        setTimeout(() => {
+                            nomeInput.style.animation = '';
+                        }, 500);
+                        
+                        nomeInput.focus();
+                    } else {
+                        // Se o nome é válido, atualizar o campo JSON e enviar o formulário
+                        document.getElementById('componentes-json').value = JSON.stringify(componentesLista);
+                        form.submit();
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao verificar nome do produto:', error);
+                    modalAlertContainer.innerHTML = ``;
+                    const nomeInput = document.getElementById('nome');
+                    nomeInput.classList.add('is-invalid', 'border-danger');
+                    
+                    // Adicionar ícone de erro
+                    const inputContainer = nomeInput.parentElement;
+                    if (!inputContainer.querySelector('.input-error-icon')) {
+                        const errorIcon = document.createElement('i');
+                        errorIcon.className = 'fas fa-exclamation-circle input-error-icon';
+                        errorIcon.style.backgroundColor = 'transparent';
+                        inputContainer.appendChild(errorIcon);
+                    }
+                    
+                    // Adicionar animação de shake para chamar atenção
+                    nomeInput.style.animation = 'shake 0.5s';
+                    setTimeout(() => {
+                        nomeInput.style.animation = '';
+                    }, 500);
+                    
+                    nomeInput.focus();
+                });
+        }
+    });
+
+    // Função para inicializar a paginação
+    function inicializarPaginacao(linhas, paginacao, itemsPorPagina) {
+        const totalItens = linhas.length;
+        const totalPaginas = Math.ceil(totalItens / itemsPorPagina);
+        
+        // Ocultar todas as linhas inicialmente
+        linhas.forEach((linha, index) => {
+            if (index < itemsPorPagina) {
+                linha.style.display = '';
+            } else {
+                linha.style.display = 'none';
+            }
+        });
+        
+        // Construir a paginação
+        if (totalPaginas > 1) {
+            let html = `
+                <nav aria-label="Paginação de produtos">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" aria-label="Anterior">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+            `;
+            
+            for (let i = 1; i <= totalPaginas; i++) {
+                html += `
+                    <li class="page-item ${i === 1 ? 'active' : ''}">
+                        <a class="page-link" href="#" data-pagina="${i}">${i}</a>
+                    </li>
+                `;
+            }
+            
+            html += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" aria-label="Próximo">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            `;
+            
+            paginacao.innerHTML = html;
+            
+            // Adicionar event listeners para os links de paginação
+            const links = paginacao.querySelectorAll('.page-link');
+            links.forEach(link => {
+                link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                    const pagina = this.getAttribute('data-pagina');
+                    if (!pagina) {
+                        // Links de próximo/anterior
+                        const paginaAtual = parseInt(paginacao.querySelector('.active a').getAttribute('data-pagina'));
+                        
+                        if (this.getAttribute('aria-label') === 'Anterior') {
+                            if (paginaAtual > 1) {
+                                mudarPagina(paginaAtual - 1, linhas, paginacao, itemsPorPagina);
+                            }
+                        } else if (this.getAttribute('aria-label') === 'Próximo') {
+                            if (paginaAtual < totalPaginas) {
+                                mudarPagina(paginaAtual + 1, linhas, paginacao, itemsPorPagina);
+                            }
+                        }
+                    } else {
+                        // Links numéricos
+                        mudarPagina(parseInt(pagina), linhas, paginacao, itemsPorPagina);
+                    }
+                });
+            });
+        }
+    }
+    
+    // Função para trocar de página
+    function mudarPagina(pagina, linhas, paginacao, itemsPorPagina) {
+        const inicio = (pagina - 1) * itemsPorPagina;
+        const fim = inicio + itemsPorPagina;
+        
+        // Mostrar apenas as linhas da página atual
+        linhas.forEach((linha, index) => {
+            if (index >= inicio && index < fim) {
+                linha.style.display = '';
+                    } else {
+                linha.style.display = 'none';
+            }
+        });
+        
+        // Atualizar a classe "active" nos links de paginação
+        paginacao.querySelectorAll('.page-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        
+        const paginaItem = paginacao.querySelector(`.page-link[data-pagina="${pagina}"]`);
+        if (paginaItem) {
+            paginaItem.parentElement.classList.add('active');
+        }
+        
+        // Atualizar estado de disabled para os botões anterior/próximo
+        const btnAnterior = paginacao.querySelector('.page-link[aria-label="Anterior"]');
+        const btnProximo = paginacao.querySelector('.page-link[aria-label="Próximo"]');
+        
+        if (btnAnterior && btnProximo) {
+            btnAnterior.parentElement.classList.toggle('disabled', pagina === 1);
+            btnProximo.parentElement.classList.toggle('disabled', pagina === Math.ceil(linhas.length / itemsPorPagina));
+        }
+    }
+    
+    // Função para filtrar produtos
+    function filtrarProdutos(termoProduto, termoCliente) {
+        // Obter elementos necessários
+        const tabela = document.getElementById('tabelaProdutos');
+        
+        if (!tabela) return;  // Sair se a tabela não existir
+        
+        const linhas = tabela.querySelectorAll('tbody tr');
+        const paginacao = document.getElementById('paginacaoProdutos');
+        const resultadoBusca = document.getElementById('resultadoBusca');
+        const contadorResultados = document.getElementById('contadorResultados');
+        const filtrosAplicados = document.getElementById('filtrosAplicados');
+        const produtoBadge = document.getElementById('produtoBadge');
+        const clienteBadge = document.getElementById('clienteBadge');
+        const btnLimparFiltros = document.getElementById('limparFiltros');
+        
+        // Contagem de resultados
+        let linhasVisiveis = [];
+        
+        // Processar cada linha da tabela
+        linhas.forEach(linha => {
+            const celulaProduto = linha.querySelector('td:nth-child(1)');
+            const celulaCliente = linha.querySelector('td:nth-child(2)');
+            
+            if (!celulaProduto || !celulaCliente) return;
+            
+            const nomeProduto = celulaProduto.textContent.toLowerCase();
+            const nomeCliente = celulaCliente.textContent.toLowerCase();
+            
+            // Verificar se corresponde aos critérios de busca
+            const matchProduto = termoProduto === '' || nomeProduto.includes(termoProduto.toLowerCase());
+            const matchCliente = termoCliente === '' || nomeCliente.includes(termoCliente.toLowerCase());
+            
+            // Marcar a linha conforme o resultado
+            if (matchProduto && matchCliente) {
+                linha.style.display = '';
+                linhasVisiveis.push(linha);
+            } else {
+                linha.style.display = 'none';
+            }
+        });
+        
+        // Atualizar informações de busca na interface
+        if (resultadoBusca) {
+            // Mostrar a seção de resultados
+            resultadoBusca.style.display = 'flex';
+            
+            // Atualizar contador
+            if (contadorResultados) {
+                contadorResultados.textContent = linhasVisiveis.length;
+            }
+            
+            // Mostrar filtros aplicados
+            if (filtrosAplicados) {
+                const temFiltros = termoProduto !== '' || termoCliente !== '';
+                filtrosAplicados.style.display = temFiltros ? 'block' : 'none';
+                
+                // Badge de produto
+                if (produtoBadge) {
+                    if (termoProduto !== '') {
+                        produtoBadge.textContent = `Produto: "${termoProduto}"`;
+                        produtoBadge.style.display = 'inline-block';
+                    } else {
+                        produtoBadge.style.display = 'none';
+                    }
+                }
+                
+                // Badge de cliente
+                if (clienteBadge) {
+                    if (termoCliente !== '') {
+                        clienteBadge.textContent = `Cliente: "${termoCliente}"`;
+                        clienteBadge.style.display = 'inline-block';
+                    } else {
+                        clienteBadge.style.display = 'none';
+                    }
+                }
+                
+                // Botão limpar filtros
+                if (btnLimparFiltros) {
+                    btnLimparFiltros.style.display = temFiltros ? 'inline-block' : 'none';
+                }
+            }
+        }
+        
+        // Atualizar paginação
+        if (paginacao) {
+            // Limpar paginação existente
+            paginacao.innerHTML = '';
+            
+            // Se houver linhas visíveis, inicializar a paginação
+            if (linhasVisiveis.length > 0) {
+        inicializarPaginacao(linhasVisiveis, paginacao, 10);
+            }
+        }
+    }
+</script>
+
+<!-- Script para funcionalidade de busca -->
+<script src="{{ url_for('static', filename='js/busca-produtos.js') }}"></script>
+{% endblock %}
+
+

@@ -1,0 +1,15 @@
+Flask==2.3.3
+Werkzeug==2.3.7
+# SQLite3 já vem com o Python, não é um pacote PyPI
+Flask-Caching==2.0.2
+Flask-Login==0.6.2
+Flask-WTF==1.1.1
+pandas
+matplotlib
+reportlab
+gunicorn==20.1.0
+pytest==7.4.0
+python-dotenv==1.0.0
+python-telegram-bot==20.6
+openai==1.3.0
+requests==2.31.0

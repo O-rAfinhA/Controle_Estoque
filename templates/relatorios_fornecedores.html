@@ -1,0 +1,707 @@
+{% extends 'base.html' %}
+
+{% block title %}Relatórios de Fornecedores{% endblock %}
+
+{% block page_title %}<span style="font-weight: 700; color: #007bff;"><i class="fas fa-chart-line me-2"></i>Relatórios de Fornecedores</span>{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex">
+    <a href="{{ url_for('avaliacao_fornecedores') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-1"></i>Voltar
+    </a>
+</div>
+{% endblock %}
+
+{% block head_extras %}
+<style>
+    /* Relatórios */
+    #reportContainer {
+        background-color: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+        padding: 1.5rem;
+    }
+    
+    /* Botão com a cor do sistema */
+    .btn-sistema {
+        color: #007bff !important;
+        border-color: #007bff !important;
+    }
+    
+    .btn-sistema:hover {
+        background-color: rgba(0, 123, 255, 0.1) !important;
+    }
+    
+    /* Botão com fundo azul e texto branco */
+    .btn-sistema-filled {
+        background-color: #007bff !important;
+        border-color: #007bff !important;
+        color: white !important;
+    }
+    
+    .btn-sistema-filled:hover {
+        background-color: #0069d9 !important;
+        border-color: #0062cc !important;
+    }
+    
+    /* Estilos para o novo layout de fornecedores */
+    .fornecedores-lista {
+        border-top: 1px solid #e9ecef;
+    }
+    
+    .fornecedor-item {
+        transition: all 0.2s ease;
+    }
+    
+    .fornecedor-cabecalho {
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        border-left: 4px solid transparent;
+    }
+    
+    .fornecedor-cabecalho:hover {
+        background-color: rgba(0, 123, 255, 0.05);
+        border-left: 4px solid #007bff;
+    }
+    
+    .fornecedor-cabecalho[aria-expanded="true"] {
+        background-color: rgba(0, 123, 255, 0.1);
+        border-left: 4px solid #007bff;
+    }
+    
+    .fornecedor-cabecalho .transition-icon {
+        transition: transform 0.3s ease;
+    }
+    
+    .fornecedor-cabecalho[aria-expanded="true"] .transition-icon {
+        transform: rotate(90deg);
+    }
+    
+    .fornecedor-detalhes {
+        border-top: 1px solid #e9ecef;
+        background-color: #f8f9fa;
+    }
+    
+    /* Score circle */
+    .score-circle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background-color: rgba(231, 74, 59, 0.15);
+        color: #e74a3b;
+        font-weight: bold;
+        font-size: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    /* Bullet points */
+    .bullet-point {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        flex-shrink: 0;
+    }
+    
+    /* Melhorias nos cards */
+    .card {
+        border-radius: 0.5rem;
+        overflow: hidden;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .card-header {
+        border-bottom: 1px solid rgba(0,0,0,0.125);
+    }
+    
+    /* Progress bars */
+    .progress {
+        border-radius: 10px;
+        background-color: rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+    }
+    
+    /* Estilos para badges de status mais suaves */
+    .badge.bg-success {
+        background-color: rgba(28, 200, 138, 0.15) !important;
+        color: #0d8a5c !important; /* Verde mais escuro e forte */
+        font-weight: 600; /* Fonte um pouco mais grossa */
+        padding: 0.45em 0.85em;
+        font-size: 0.85em;
+        letter-spacing: 0.02em;
+        min-width: 75px;
+        text-align: center;
+    }
+    
+    .badge.bg-warning {
+        background-color: rgba(246, 194, 62, 0.15) !important;
+        color: #d4a30c !important; /* Amarelo mais escuro e forte */
+        font-weight: 600; /* Fonte um pouco mais grossa */
+        padding: 0.45em 0.85em;
+        font-size: 0.85em;
+        letter-spacing: 0.02em;
+        min-width: 75px;
+        text-align: center;
+    }
+    
+    .badge.bg-danger {
+        background-color: rgba(231, 74, 59, 0.15) !important;
+        color: #e74a3b !important;
+        font-weight: 600;
+        padding: 0.35em 0.7em;
+        font-size: 0.75em;
+        letter-spacing: 0.02em;
+        min-width: 60px;
+        text-align: center;
+    }
+    
+    .badge.bg-secondary {
+        background-color: rgba(108, 117, 125, 0.15) !important;
+        color: #5a6268 !important;
+        font-weight: 600;
+        padding: 0.45em 0.85em;
+        font-size: 0.85em;
+        letter-spacing: 0.02em;
+        min-width: 75px;
+        text-align: center;
+    }
+    
+    .badge.bg-primary {
+        background-color: rgba(0, 123, 255, 0.15) !important;
+        color: #007bff !important;
+        font-weight: 600;
+        padding: 0.45em 0.85em;
+        font-size: 0.85em;
+        letter-spacing: 0.02em;
+        min-width: 75px;
+        text-align: center;
+    }
+    
+    .badge.bg-info {
+        background-color: rgba(23, 162, 184, 0.15) !important;
+        color: #117a8b !important;
+        font-weight: 600;
+        padding: 0.45em 0.85em;
+        font-size: 0.85em;
+        letter-spacing: 0.02em;
+        min-width: 75px;
+        text-align: center;
+    }
+    
+    .badge.rounded-pill {
+        border-radius: 50rem !important;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    }
+    
+    /* Tabelas melhoradas */
+    .table {
+        margin-bottom: 0;
+    }
+    
+    .table thead th {
+        font-weight: 600;
+        color: #495057;
+        border-top: none;
+    }
+    
+    .table-striped tbody tr:nth-of-type(odd) {
+        background-color: rgba(0, 0, 0, 0.02);
+    }
+    
+    /* Media Queries para responsividade */
+    @media (max-width: 767.98px) {
+        .score-circle {
+            width: 40px;
+            height: 40px;
+            font-size: 12px;
+        }
+        
+        .fornecedor-cabecalho {
+            padding: 0.75rem;
+        }
+        
+        .fornecedor-detalhes {
+            padding: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    {% if is_initial_load or not filtro_aplicado %}
+    <!-- Interface inicial simplificada, apenas com formulário de filtro -->
+    <div class="card mt-4 mb-4 shadow-sm">
+        <div class="card-body p-5 text-center">
+            <h2 class="mb-4" style="color: #007bff;"><i class="fas fa-chart-line me-2"></i>Relatórios de Fornecedores Críticos</h2>
+            <div class="mb-4">
+                <i class="fas fa-filter fa-4x text-muted mb-3"></i>
+                <h5 class="text-primary mt-4">Selecione os filtros para gerar seu relatório</h5>
+                <p class="text-muted mb-4">Configure os critérios abaixo e clique em "Gerar Relatório" para visualizar fornecedores com desempenho crítico.</p>
+            </div>
+            
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <form id="filtroForm" method="get" action="{{ url_for('relatorios_fornecedores') }}" class="border p-4 rounded bg-light">
+                        <input type="hidden" name="tab" value="relatorios">
+                        <input type="hidden" name="apenas_criticos" value="true">
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6 mb-3">
+                                <label for="tipoFiltro" class="form-label">Tipo de Relatório</label>
+                                <select class="form-select shadow-sm" id="tipoFiltro" name="tipo_filtro" onchange="atualizarTipoFiltro()">
+                                    <option value="">Selecione o tipo de relatório...</option>
+                                    <option value="mensal">Mensal</option>
+                                    <option value="trimestral">Trimestral</option>
+                                    <option value="anual">Anual</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3" id="grupoFiltroMes">
+                                <label for="filtroMes" class="form-label">Mês de Referência</label>
+                                <input type="month" class="form-control shadow-sm" id="filtroMes" name="filtro_mes">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3 d-none" id="grupoFiltroTrimestre">
+                                <label for="filtroTrimestre" class="form-label">Trimestre</label>
+                                <select class="form-select shadow-sm" id="filtroTrimestre" name="filtro_trimestre">
+                                    <option value="">Selecione o trimestre...</option>
+                                    {% for trimestre in trimestres %}
+                                    <option value="{{ trimestre.valor }}">{{ trimestre.texto }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3 d-none" id="grupoFiltroAno">
+                                <label for="filtroAno" class="form-label">Ano</label>
+                                <select class="form-select shadow-sm" id="filtroAno" name="filtro_ano">
+                                    <option value="">Selecione o ano...</option>
+                                    {% for ano in anos %}
+                                    <option value="{{ ano }}">{{ ano }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-12 mt-2">
+                                <button type="submit" class="btn btn-sistema-filled w-100">
+                                    <i class="fas fa-chart-line me-2"></i> Gerar Relatório
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% else %}
+    <!-- Todo o conteúdo original fica aqui quando filtro_aplicado for verdadeiro -->
+    <div class="card mt-4 mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 style="color: #007bff;"><i class="fas fa-chart-line me-2"></i>Relatórios de Fornecedores Críticos</h2>
+                <a href="{{ url_for('relatorios_fornecedores') }}" class="btn btn-outline-primary btn-sistema">
+                    <i class="fas fa-sync-alt me-1"></i>Novo Relatório
+                </a>
+            </div>
+            
+            <div class="card border mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0" style="color: #007bff;"><i class="fas fa-filter me-2"></i>Filtros de Período</h5>
+                </div>
+                <div class="card-body">
+                    <form id="filtroForm" method="get" action="{{ url_for('relatorios_fornecedores') }}">
+                        <input type="hidden" name="tab" value="relatorios">
+                        <input type="hidden" name="apenas_criticos" value="true">
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="tipoFiltro" class="form-label">Tipo de Relatório</label>
+                                <select class="form-select shadow-sm" id="tipoFiltro" name="tipo_filtro" onchange="atualizarTipoFiltro()">
+                                    <option value="">Selecione...</option>
+                                    <option value="mensal" {% if tipo_filtro == 'mensal' %}selected{% endif %}>Mensal</option>
+                                    <option value="trimestral" {% if tipo_filtro == 'trimestral' %}selected{% endif %}>Trimestral</option>
+                                    <option value="anual" {% if tipo_filtro == 'anual' %}selected{% endif %}>Anual</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3 {{ 'd-none' if tipo_filtro != 'mensal' }}" id="grupoFiltroMes">
+                                <label for="filtroMes" class="form-label">Mês de Referência</label>
+                                <input type="month" class="form-control shadow-sm" id="filtroMes" name="filtro_mes" 
+                                    value="{{ filtro_mes }}">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3 {{ 'd-none' if tipo_filtro != 'trimestral' }}" id="grupoFiltroTrimestre">
+                                <label for="filtroTrimestre" class="form-label">Trimestre</label>
+                                <select class="form-select shadow-sm" id="filtroTrimestre" name="filtro_trimestre">
+                                    <option value="">Selecione...</option>
+                                    {% for trimestre in trimestres %}
+                                    <option value="{{ trimestre.valor }}" {% if filtro_trimestre == trimestre.valor %}selected{% endif %}>
+                                        {{ trimestre.texto }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3 {{ 'd-none' if tipo_filtro != 'anual' }}" id="grupoFiltroAno">
+                                <label for="filtroAno" class="form-label">Ano</label>
+                                <select class="form-select shadow-sm" id="filtroAno" name="filtro_ano">
+                                    <option value="">Selecione...</option>
+                                    {% for ano in anos %}
+                                    <option value="{{ ano }}" {% if filtro_ano == ano %}selected{% endif %}>{{ ano }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3 d-flex align-items-end">
+                                <button type="submit" class="btn btn-outline-primary btn-sistema w-100">
+                                    <i class="fas fa-search me-1"></i> Atualizar Relatório
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            {% if periodo_selecionado and periodo_selecionado != "Todos os períodos" %}
+            <div class="alert alert-light border mb-4">
+                <h5 class="alert-heading mb-0" style="color: #007bff;"><i class="fas fa-info-circle me-2"></i>Período: {{ periodo_selecionado }}</h5>
+            </div>
+            {% endif %}
+            
+            <div id="reportContainer">
+                {% if relatorio and fornecedores_criticos and fornecedores_criticos|length > 0 %}
+                    <div class="card border shadow-sm mb-4">
+                        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0 text-primary"><i class="fas fa-exclamation-triangle me-2"></i>Fornecedores com Desempenho Crítico</h5>
+                            <span class="badge bg-primary rounded-pill">{{ fornecedores_criticos|length }} fornecedores</span>
+                        </div>
+                        <div class="card-body p-0">
+                            <!-- Lista de fornecedores em cards em vez de tabela -->
+                            <div class="fornecedores-lista">
+                                {% for fornecedor in fornecedores_criticos %}
+                                <div class="fornecedor-item border-bottom" id="fornecedor-{{ fornecedor.id }}">
+                                    <!-- Cabeçalho do fornecedor (sempre visível) -->
+                                    <div class="fornecedor-cabecalho p-3" data-bs-toggle="collapse" data-bs-target="#detalhes-{{ fornecedor.id }}">
+                                        <div class="row align-items-center">
+                                            <div class="col-md-4 mb-2 mb-md-0">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="rounded-circle bg-primary bg-opacity-10 p-2 me-3">
+                                                        <i class="fas fa-caret-right text-primary transition-icon"></i>
+                                                    </div>
+                                                    <h6 class="mb-0 fw-bold">{{ fornecedor.nome }}</h6>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-7 mb-2 mb-md-0">
+                                                <div class="row">
+                                                    <div class="col-sm-4 mb-2 mb-sm-0">
+                                                        <div class="small text-muted mb-1">Recebimentos</div>
+                                                        <div class="fw-bold">{{ fornecedor.total_recebimentos }}</div>
+                                                    </div>
+                                                    <div class="col-sm-4 mb-2 mb-sm-0">
+                                                        <div class="small text-muted mb-1">Aprovação</div>
+                                                        <div class="fw-bold d-flex align-items-center">
+                                                            <span class="me-2">{{ fornecedor.perc_aprovacao }}%</span>
+                                                            <div class="progress flex-grow-1" style="height: 6px; width: 50px;">
+                                                                <div class="progress-bar" style="width: {{ fornecedor.perc_aprovacao }}%; background-color: #007bff;"></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-sm-4">
+                                                        <div class="small text-muted mb-1">Pontualidade</div>
+                                                        <div class="fw-bold d-flex align-items-center">
+                                                            <span class="me-2">{{ fornecedor.perc_pontualidade }}%</span>
+                                                            <div class="progress flex-grow-1" style="height: 6px; width: 50px;">
+                                                                <div class="progress-bar" style="width: {{ fornecedor.perc_pontualidade }}%; background-color: #007bff;"></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-1 text-end mb-2 mb-md-0">
+                                                <div class="score-container d-flex flex-column align-items-center justify-content-center">
+                                                    <div class="score-circle mb-1">
+                                                        <span class="score-value">{{ fornecedor.score_final }}%</span>
+                                                    </div>
+                                                    <span class="badge bg-danger rounded-pill">Crítico</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Detalhes do fornecedor (expansível) -->
+                                    <div class="collapse" id="detalhes-{{ fornecedor.id }}">
+                                        <div class="fornecedor-detalhes p-4 bg-light">
+                                            <!-- Cartões de métricas -->
+                                            <div class="row mb-4">
+                                                <div class="col-md-3 mb-3 mb-md-0">
+                                                    <div class="card h-100 border-0 shadow-sm">
+                                                        <div class="card-header bg-primary text-white py-2">
+                                                            <h6 class="card-title mb-0"><i class="fas fa-chart-line me-2"></i>Performance</h6>
+                                                        </div>
+                                                        <div class="card-body">
+                                                            <div class="d-flex justify-content-between align-items-center">
+                                                                <span>Meta</span>
+                                                                <span class="fw-bold">85%</span>
+                                                            </div>
+                                                            <div class="progress mt-2 mb-3" style="height: 8px;">
+                                                                <div class="progress-bar bg-success" style="width: 85%;"></div>
+                                                            </div>
+                                                            <div class="d-flex justify-content-between align-items-center">
+                                                                <span>Atual</span>
+                                                                <span class="fw-bold text-danger">{{ fornecedor.score_final }}%</span>
+                                                            </div>
+                                                            <div class="progress mt-2" style="height: 8px;">
+                                                                <div class="progress-bar bg-danger" style="width: {{ fornecedor.score_final }}%;"></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-9">
+                                                    <div class="card h-100 border-0 shadow-sm">
+                                                        <div class="card-header bg-primary text-white py-2">
+                                                            <h6 class="card-title mb-0"><i class="fas fa-exclamation-circle me-2"></i>Principais Causas</h6>
+                                                        </div>
+                                                        <div class="card-body">
+                                                            <div class="row">
+                                                                {% for causa in fornecedor.causas %}
+                                                                <div class="col-md-6 mb-2">
+                                                                    <div class="d-flex align-items-center">
+                                                                        <div class="bullet-point bg-danger me-2"></div>
+                                                                        <div>{{ causa }}</div>
+                                                                    </div>
+                                                                </div>
+                                                                {% endfor %}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Tabela de problemas -->
+                                            <div class="card border-0 shadow-sm mb-4">
+                                                <div class="card-header bg-primary text-white py-2">
+                                                    <h6 class="card-title mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Histórico de Problemas</h6>
+                                                </div>
+                                                <div class="card-body p-0">
+                                                    <div class="table-responsive">
+                                                        <table class="table table-striped table-bordered mb-0">
+                                                            <thead class="table-light">
+                                                                <tr>
+                                                                    <th>Data</th>
+                                                                    <th>PC/NF</th>
+                                                                    <th>Status</th>
+                                                                    <th>Problema</th>
+                                                                    <th>Ação Corretiva</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {% for problema in fornecedor.problemas %}
+                                                                <tr>
+                                                                    <td>{{ problema.data_recebimento|formatdatetime('%d/%m/%Y') }}</td>
+                                                                    <td>{{ problema.pc }}/{{ problema.nf }}</td>
+                                                                    <td>
+                                                                        <span class="badge {% if problema.status == 'ac' %}bg-warning{% else %}bg-danger{% endif %} rounded-pill">
+                                                                            {{ problema.status|format_status }}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td>{{ problema.descricao_ocorrencia }}</td>
+                                                                    <td>
+                                                                        {% if problema.acao_corretiva %}
+                                                                            <span class="badge bg-info rounded-pill">{{ problema.acao_corretiva }}</span>
+                                                                        {% else %}
+                                                                            <span class="text-muted">—</span>
+                                                                        {% endif %}
+                                                                    </td>
+                                                                </tr>
+                                                                {% endfor %}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Recomendações -->
+                                            <div class="card border-0 bg-primary bg-opacity-10 shadow-sm">
+                                                <div class="card-header bg-primary text-white py-2">
+                                                    <h6 class="card-title mb-0"><i class="fas fa-lightbulb me-2"></i>Recomendações</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="row">
+                                                        {% for recomendacao in fornecedor.recomendacoes %}
+                                                        <div class="col-md-6 mb-2">
+                                                            <div class="d-flex">
+                                                                <div class="me-3 text-primary">
+                                                                    <i class="fas fa-check-circle"></i>
+                                                                </div>
+                                                                <div>{{ recomendacao }}</div>
+                                                            </div>
+                                                        </div>
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="card-footer bg-light py-3">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center">
+                                <span class="text-muted mb-2 mb-md-0">
+                                    <i class="fas fa-info-circle me-1"></i> 
+                                    <span class="d-none d-sm-inline">Clique em um fornecedor para ver detalhes completos</span>
+                                    <span class="d-inline d-sm-none">Clique para detalhes</span>
+                                </span>
+                                <div>
+                                    <a href="{{ url_for('exportar_excel', 
+                                                tipo_filtro=tipo_filtro, 
+                                                filtro_mes=filtro_mes, 
+                                                filtro_trimestre=filtro_trimestre,
+                                                filtro_ano=filtro_ano,
+                                                apenas_criticos=true) }}" 
+                                        class="btn btn-outline-primary btn-sistema btn-sm">
+                                        <i class="fas fa-file-excel me-1"></i> Gerar CSV
+                                    </a>
+                                    <a href="{{ url_for('exportar_analise_desempenho', 
+                                                tipo_filtro=tipo_filtro, 
+                                                filtro_mes=filtro_mes, 
+                                                filtro_trimestre=filtro_trimestre,
+                                                filtro_ano=filtro_ano) }}" 
+                                        class="btn btn-outline-primary btn-sistema btn-sm ms-2">
+                                        <i class="fas fa-file-pdf me-1"></i> Gerar PDF
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card border mb-4">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0" style="color: #007bff;"><i class="fas fa-tasks me-2"></i>Resumo de Ações Corretivas</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Fornecedor</th>
+                                            <th>N Ações</th>
+                                            <th>Abertura</th>
+                                            <th>Status</th>
+                                            <th>Eficácia</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for acao in acoes_corretivas %}
+                                        <tr>
+                                            <td>{{ acao.fornecedor }}</td>
+                                            <td>{{ acao.numero }}</td>
+                                            <td>{{ acao.data_abertura|formatdatetime('%d/%m/%Y') }}</td>
+                                            <td><span class="badge bg-warning rounded-pill">{{ acao.status }}</span></td>
+                                            <td>{{ acao.eficacia }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="alert alert-light border">
+                        <h5 class="alert-heading text-center mb-3" style="color: #007bff;"><i class="fas fa-chart-bar me-2"></i>Não há fornecedores críticos para este período</h5>
+                        <p class="text-center mb-0 text-muted">Nenhum fornecedor ficou abaixo da meta de 85% no período selecionado, ou não há dados suficientes para análise.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Função para atualizar os campos de filtro baseado no tipo selecionado
+    function atualizarTipoFiltro() {
+        const tipoFiltro = document.getElementById('tipoFiltro').value;
+        
+        // Esconder todos os campos de filtro específicos
+        document.getElementById('grupoFiltroMes').classList.add('d-none');
+        document.getElementById('grupoFiltroTrimestre').classList.add('d-none');
+        document.getElementById('grupoFiltroAno').classList.add('d-none');
+        
+        // Mostrar o campo relevante com base no tipo de filtro
+        if (tipoFiltro === 'mensal') {
+            document.getElementById('grupoFiltroMes').classList.remove('d-none');
+        } else if (tipoFiltro === 'trimestral') {
+            document.getElementById('grupoFiltroTrimestre').classList.remove('d-none');
+        } else if (tipoFiltro === 'anual') {
+            document.getElementById('grupoFiltroAno').classList.remove('d-none');
+        }
+    }
+    
+    // Executar quando o DOM estiver pronto
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar função para expandir/colapsar detalhes
+        var clickableRows = document.querySelectorAll('.clickable-row');
+        clickableRows.forEach(function(row) {
+            row.addEventListener('click', function() {
+                const icon = this.querySelector('.transition-icon');
+                if (icon) {
+                    // A rotação é controlada por CSS via classe transition-icon
+                }
+            });
+        });
+        
+        // Chamar atualizarTipoFiltro para configurar a interface corretamente
+        atualizarTipoFiltro();
+        
+        // Inicializar select de tipo e mostrar Mês de Referência inicialmente
+        const tipoFiltroSelect = document.getElementById('tipoFiltro');
+        if (tipoFiltroSelect) {
+            // Já tem um event listener para change
+            // Mostrar o campo Mês de Referência inicialmente se estiver escondido
+            document.getElementById('grupoFiltroMes').classList.remove('d-none');
+        }
+    });
+</script>
+
+<!-- Estilos adicionais para os fornecedores críticos -->
+<style>
+    .clickable-row {
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .clickable-row:hover {
+        background-color: rgba(0, 0, 0, 0.02);
+    }
+    
+    .transition-icon {
+        transition: transform 0.3s ease;
+    }
+    
+    .clickable-row[aria-expanded="true"] .transition-icon {
+        transform: rotate(90deg);
+    }
+    
+    .progress {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.04);
+    }
+</style>
+{% endblock %} 

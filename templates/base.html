@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <!-- Este trecho deve ser adicionado na seção head do seu arquivo base.html, antes do fechamento da tag </head> -->
+
+<!-- Inclusão dos arquivos CSS para tabelas com rolagem -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('table_styles_css') }}">
+    
+<!-- Inclusão dos scripts personalizados para animação das tabelas -->
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+<script src="{{ url_for('table_animations_js') }}"></script>
+
+ <!-- Este trecho deve ser adicionado na seção head do seu arquivo base.html, antes do fechamento da tag </head> -->
+
+<!-- Estilos personalizados -->
+<style>
+    /* Título das páginas com negrito mais forte */
+    .page-title, h2, .card-header h4, .card-header h5 {
+        font-weight: 700 !important; /* 700 é o valor para bold, 800 para extra-bold, 900 para ultra-bold */
+        color: #333; /* Cor mais escura para melhor contraste */
+    }
+    
+    /* Itens do menu principal com fonte maior */
+    .navbar-nav .nav-link {
+        font-size: 1.05rem !important;
+        font-weight: 500 !important;
+        transition: all 0.2s ease-in-out !important;
+    }
+    
+    /* Efeito hover para os itens do menu */
+    .navbar-nav .nav-link:hover {
+        color: #ffffff !important;
+        transform: translateY(-2px) !important;
+        text-shadow: 0 0 5px rgba(255, 255, 255, 0.5) !important;
+    }
+    
+    /* Estilos para mensagens de sistema em páginas com fundo escuro */
+    .bg-dark .alert,
+    .bg-dark .flash-message,
+    .bg-dark .system-message {
+        color: #fff !important;
+        background-color: rgba(52, 58, 64, 0.8) !important;
+        border-color: rgba(255, 255, 255, 0.2) !important;
+    }
+    
+    .bg-dark .alert-danger {
+        background-color: rgba(220, 53, 69, 0.8) !important;
+        color: #fff !important;
+    }
+    
+    .bg-dark .alert-success {
+        background-color: rgba(40, 167, 69, 0.8) !important;
+        color: #fff !important;
+    }
+    
+    .bg-dark .alert-warning {
+        background-color: rgba(255, 193, 7, 0.8) !important;
+        color: #212529 !important;
+    }
+    
+    .bg-dark .alert-info {
+        background-color: rgba(23, 162, 184, 0.8) !important;
+        color: #fff !important;
+    }
+    
+    /* Reset global para pseudo-elementos que podem causar pontos indesejados */
+    a::before, a::after,
+    button::before, button::after,
+    i::before, i::after {
+        content: none !important;
+    }
+    
+    /* Exceção para ícones FontAwesome para permitir que eles sejam renderizados */
+    .fas::before, .fas::after,
+    .fa::before, .fa::after,
+    .fab::before, .fab::after,
+    .far::before, .far::after {
+        content: inherit !important;
+        display: inline-block !important;
+        font-style: normal !important;
+        font-variant: normal !important;
+        text-rendering: auto !important;
+        -webkit-font-smoothing: antialiased !important;
+    }
+    
+    h2 {
+        font-size: 1.8rem !important; /* Aumentando ligeiramente o tamanho da fonte */
+        margin-bottom: 1rem !important;
+    }
+    
+    /* Título dos cards e seções */
+    .card-header h5, .card-title, h5.mb-0 {
+        font-weight: 600 !important; /* Também deixamos os cabeçalhos dos cards em semi-bold */
+    }
+    
+    /* Breadcrumb mais nítido */
+    .breadcrumb-item.active {
+        font-weight: 500;
+    }
+    
+    body {
+        background-color: #f8f9fa;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .content {
+        flex: 1 0 auto;
+        padding: 20px;
+    }
+    
+    .footer {
+        flex-shrink: 0;
+        background-color: #f8f9fa;
+        padding: 10px 0;
+        border-top: 1px solid #dee2e6;
+        text-align: center;
+        margin-top: 20px;
+    }
+    
+    .page-title {
+        font-size: 1.75rem;
+        margin-bottom: 1.5rem;
+        color: #343a40;
+        font-weight: 600;
+    }
+
+    .card-header {
+        background-color: #f8f9fc;
+        border-bottom: 1px solid #e3e6f0;
+        color: #4e73df;
+        font-weight: 600;
+    }
+    
+    /* Estilo para todos os ícones nas colunas de ações */
+    .action-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 4px;
+        border: 1px solid #dee2e6;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: transparent;
+        margin: 0 2px;
+        transition: all 0.2s ease;
+        padding: 0;
+    }
+    
+    /* Ajusta o ícone dentro do botão de ação */
+    .action-icon i, 
+    .action-icon .fas,
+    .action-icon .fa,
+    .action-icon .far,
+    .action-icon .fab {
+        font-size: 14px !important;
+        line-height: 1 !important;
+        width: auto !important;
+        height: auto !important;
+        display: inline-block !important;
+        text-align: center !important;
+    }
+    
+    /* Permite que os ícones do FontAwesome funcionem normalmente */
+    .fas, .fa, .far, .fab {
+        font-family: "Font Awesome 5 Free", "FontAwesome" !important;
+        font-style: normal !important;
+        font-weight: 900 !important;
+        display: inline-block !important;
+    }
+    
+    .far {
+        font-weight: 400 !important;
+    }
+    
+    .fab {
+        font-family: "Font Awesome 5 Brands", "FontAwesome" !important;
+    }
+    
+    .action-icon:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 3px 5px rgba(0,0,0,0.1);
+    }
+    
+    .action-icon.edit-icon {
+        color: #007bff;
+        border-color: #007bff;
+    }
+    
+    .action-icon.edit-icon:hover {
+        background-color: #007bff;
+        color: #fff;
+    }
+    
+    .action-icon.delete-icon {
+        color: #dc3545;
+        border-color: #dc3545;
+    }
+    
+    .action-icon.delete-icon:hover {
+        background-color: #dc3545;
+        color: #fff;
+    }
+    
+    .action-icon.view-icon {
+        color: #28a745;
+        border-color: #28a745;
+    }
+    
+    .action-icon.view-icon:hover {
+        background-color: #28a745;
+        color: #fff;
+    }
+    
+    .action-icon.info-icon {
+        color: #17a2b8;
+        border-color: #17a2b8;
+    }
+    
+    .action-icon.info-icon:hover {
+        background-color: #17a2b8;
+        color: #fff;
+    }
+    
+    .action-icon.approve-icon {
+        color: #28a745;
+        border-color: #28a745;
+    }
+    
+    .action-icon.approve-icon:hover {
+        background-color: #28a745;
+        color: #fff;
+    }
+    
+    .action-icon.reject-icon {
+        color: #dc3545;
+        border-color: #dc3545;
+    }
+    
+    .action-icon.reject-icon:hover {
+        background-color: #dc3545;
+        color: #fff;
+    }
+
+    /* Garantir que os ícones FontAwesome apareçam corretamente */
+    .fa::before,
+    .fas::before,
+    .far::before,
+    .fab::before,
+    .fa-edit::before,
+    .fa-trash::before {
+        display: inline-block !important;
+        font-style: normal !important;
+        font-variant: normal !important;
+        text-rendering: auto !important;
+        -webkit-font-smoothing: antialiased !important;
+    }
+    
+    /* Códigos unicode específicos para os ícones mais usados */
+    .fa-edit::before { content: "\f044" !important; }
+    .fa-trash::before { content: "\f1f8" !important; }
+    .fa-plus-circle::before { content: "\f055" !important; }
+    .fa-search::before { content: "\f002" !important; }
+    .fa-list::before { content: "\f03a" !important; }
+    .fa-arrow-left::before { content: "\f060" !important; }
+    .fa-info-circle::before { content: "\f05a" !important; }
+    .fa-check::before { content: "\f00c" !important; }
+    .fa-times::before { content: "\f00d" !important; }
+    .fa-arrow-up::before { content: "\f062" !important; }
+    .fa-arrow-down::before { content: "\f063" !important; }
+    .fa-save::before { content: "\f0c7" !important; }
+    .fa-microchip::before { content: "\f2db" !important; }
+    .fa-box-open::before { content: "\f49e" !important; }
+    .fa-industry::before { content: "\f275" !important; }
+    .fa-exclamation-triangle::before { content: "\f071" !important; }
+    .fa-exclamation-circle::before { content: "\f06a" !important; }
+    .fa-cube::before { content: "\f1b2" !important; }
+    .fa-tachometer-alt::before { content: "\f3fd" !important; }
+    .fa-history::before { content: "\f1da" !important; }
+    .fa-calculator::before { content: "\f1ec" !important; }
+
+    /* Estilos para placeholders mais suaves em todo o sistema */
+    ::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
+        color: rgba(108, 117, 125, 0.45) !important;
+        font-style: italic;
+        opacity: 0.65 !important; /* Firefox */
+        font-size: 0.9em;
+        transition: opacity 0.2s ease;
+    }
+    
+    :-ms-input-placeholder { /* Internet Explorer 10-11 */
+        color: rgba(108, 117, 125, 0.45) !important;
+        font-style: italic;
+        font-size: 0.9em;
+    }
+    
+    ::-ms-input-placeholder { /* Microsoft Edge */
+        color: rgba(108, 117, 125, 0.45) !important;
+        font-style: italic;
+        font-size: 0.9em;
+    }
+    
+    /* Efeito de foco nos campos */
+    input:focus::placeholder,
+    textarea:focus::placeholder,
+    select:focus::placeholder {
+        opacity: 0.4 !important;
+    }
+</style>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Controle de Estoque{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Fallback Font Awesome (diferentes versões para compatibilidade) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    {% block head_extras %}{% endblock %}
+</head>
+<body>
+    <!-- Barra de Navegação -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <img src="{{ url_for('static', filename='img/emp-agilux-a7b4f.png') }}" alt="Agilux Logo" height=50" class="d-inline-block align-text-top">
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                {% if session.get('user_id') %}
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">
+                            <i class="bi bi-speedometer2 me-1"></i>
+                            Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('listar_componentes') }}">
+                            <i class="bi bi-cpu me-1"></i>
+                            Componentes
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('listar_produtos') }}">
+                            <i class="bi bi-box me-1"></i>
+                            Produtos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('listar_producoes') }}">
+                            <i class="bi bi-gear me-1"></i>
+                            Produções
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-star me-1"></i>
+                            Fornecedores
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('avaliacao_fornecedores') }}">
+                                    <i class="bi bi-star me-1"></i>
+                                    Avaliação de Fornecedores
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('sistema_avaliacao_fornecedores') }}">
+                                    <i class="bi bi-clipboard-check me-1"></i>
+                                    Sistema de Avaliação
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    
+                    {% if is_admin() %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-shield-lock me-1"></i>
+                            Administração
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('admin_painel') }}">
+                                    <i class="bi bi-grid-1x2 me-1"></i>
+                                    Painel de Controle
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('admin_usuarios_pendentes') }}">
+                                    <i class="bi bi-person-plus me-1"></i>
+                                    Usuários Pendentes
+                                    {% if usuarios_pendentes and usuarios_pendentes > 0 %}
+                                    <span class="badge bg-danger ms-1">{{ usuarios_pendentes }}</span>
+                                    {% endif %}
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('admin_solicitacoes_senha') }}">
+                                    <i class="bi bi-key me-1"></i>
+                                    Solicitações de Senha
+                                    {% if solicitacoes_pendentes and solicitacoes_pendentes > 0 %}
+                                    <span class="badge bg-danger ms-1">{{ solicitacoes_pendentes }}</span>
+                                    {% endif %}
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle me-1"></i>
+                            {{ session.get('user_name', 'Usuário') }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('logout') }}">
+                                    <i class="bi bi-box-arrow-right me-1"></i>
+                                    Sair
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+                {% else %}
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('login') }}">
+                            <i class="bi bi-box-arrow-in-right me-1"></i>
+                            Entrar
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('register') }}">
+                            <i class="bi bi-person-plus me-1"></i>
+                            Registrar
+                        </a>
+                    </li>
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    <div class="container mt-3">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Conteúdo Principal -->
+    <div class="container py-4">
+        {% if self.page_title() %}
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="page-title">{% block page_title %}{% endblock %}</h2>
+            <div class="page-actions">
+                {% block page_actions %}{% endblock %}
+            </div>
+        </div>
+        {% endif %}
+        
+        {% block content %}{% endblock %}
+    </div>
+
+     <!-- Rodapé -->
+     <footer class="footer mt-auto py-3" style="background-color: #f8f9fa;">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6 text-start">
+                    <span class="developer-credit" style="font-size: 0.75rem; opacity: 0.65; color:rgba(85, 96, 105, 0.762);">Desenvolvido por Rafa Correia</span>
+                </div>
+                <div class="col-md-6 text-center text-md-end">
+                    <span class="text-muted">Agilux &copy; - Sistema de Controle de Estoque {{ now.year }}</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- jQuery (se necessário) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- JavaScript Personalizado -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/fix-headers.js') }}"></script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,1123 @@
+{% extends "base.html" %}
+
+{% block title %}Produções - Controle de Estoque{% endblock %}
+
+{% block page_title %}<span style="font-weight: 700; color: #007bff;"><i class="fas fa-industry me-2"></i>Histórico de Produções</span>{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex">
+    <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#calcularProducaoModal">
+        <i class="fas fa-calculator me-1"></i>Calcular Nova Produção
+    </button>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-1"></i>Voltar
+    </a>
+</div>
+{% endblock %}
+
+{% block head_extras %}
+<style>
+    /* Estilos para a tabela de produções */
+    .table-responsive {
+        -ms-overflow-style: auto; /* IE e Edge */
+        scrollbar-width: thin; /* Firefox */
+        overflow-x: auto !important; 
+        overflow-y: hidden !important;
+        max-height: none !important;
+    }
+    
+    #tabelaProducoes {
+        border-collapse: collapse;
+        width: 100%;
+        margin-bottom: 0;
+        min-width: 1000px; /* Garantir largura mínima para forçar rolagem quando necessário */
+    }
+    
+    #tabelaProducoes thead tr {
+        background-color: #007bff;
+        color: white;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+    
+    #tabelaProducoes th,
+    #tabelaProducoes td {
+        padding: 12px 16px;
+        text-align: left;
+        border: 1px solid #e3e6f0;
+    }
+    
+    #tabelaProducoes tbody tr:nth-child(even) {
+        background-color: #f8f9fc;
+    }
+    
+    #tabelaProducoes tbody tr:hover {
+        background-color: #eaecf4;
+    }
+    
+    /* Garante que o tbody não cause rolagem */
+    #tabelaProducoes tbody {
+        overflow: visible !important;
+        max-height: none !important;
+    }
+    
+    /* Estilo para títulos de cards */
+    .card-header h5 {
+        font-weight: 700;
+    }
+
+    /* Estilo para os cabeçalhos de colunas */
+    #tabelaProducoes th {
+        font-weight: 600;
+        vertical-align: middle;
+    }
+    
+    .card-container {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+        margin-bottom: 25px;
+    }
+    
+    /* Estilos para barra de rolagem */
+    .table-responsive::-webkit-scrollbar {
+        height: 8px; /* Altura da barra de rolagem horizontal */
+        display: block;
+    }
+    
+    .table-responsive::-webkit-scrollbar-thumb {
+        background-color: #c1c1c1;
+        border-radius: 4px;
+    }
+    
+    .table-responsive::-webkit-scrollbar-track {
+        background-color: #f1f1f1;
+    }
+    
+    /* Estilos para a paginação */
+    .pagination {
+        margin-bottom: 0;
+    }
+    
+    .pagination .page-item .page-link {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+        line-height: 1.25;
+        border: 1px solid #dee2e6;
+        color: #007bff;
+    }
+    
+    .pagination .page-item.active .page-link {
+        background-color: #007bff;
+        border-color: #007bff;
+        color: white;
+        font-weight: 500;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    
+    .pagination .page-item.disabled .page-link {
+        color: #6c757d;
+        background-color: #fff;
+        border-color: #dee2e6;
+    }
+    
+    .pagination .page-item:not(.active):not(.disabled) .page-link:hover {
+        background-color: #e9ecef;
+        border-color: #dee2e6;
+        color: #0056b3;
+    }
+    
+    /* Estilos para ordenação */
+    .sortable {
+        cursor: pointer;
+        position: relative;
+        padding-right: 25px !important;
+    }
+    
+    .sortable:after,
+    .sortable:before {
+        content: '';
+        position: absolute;
+        right: 10px;
+        width: 0;
+        height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        opacity: 0.3;
+        pointer-events: none;
+    }
+    
+    .sortable:before {
+        border-bottom: 5px solid #fff;
+        top: calc(50% - 8px);
+    }
+    
+    .sortable:after {
+        border-top: 5px solid #fff;
+        top: calc(50% + 1px);
+    }
+    
+    .sortable.asc:before,
+    .sortable.desc:after {
+        opacity: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Buscador -->
+<div class="card mb-4">
+    <div class="card-body py-3">
+        <form id="formBuscaProducoes" class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label for="searchProduto" class="form-label mb-1" style="font-size: 14.4px; font-weight: bold;">Buscar por produto:</label>
+                <input type="text" class="form-control" id="searchProduto" placeholder="Digite o nome do produto...">
+            </div>
+            <div class="col-md-4">
+                <label for="searchData" class="form-label mb-1" style="font-size: 14.4px; font-weight: bold;">Filtrar por data:</label>
+                <input type="date" class="form-control" id="searchData">
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search me-1"></i>Buscar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="table-container">
+    <div id="resultadoBusca" class="d-flex justify-content-between align-items-center mb-3" style="display: none;">
+        <p class="mb-0"><span id="contadorResultados"></span> Produção(ões)</p>
+        <p class="mb-0" id="filtrosAplicados" style="display: none;">
+            <span id="produtoBadge" class="badge bg-info" style="display: none;"></span>
+            <span id="dataBadge" class="badge bg-info ms-1" style="display: none;"></span>
+            <button id="limparFiltros" class="btn btn-sm btn-outline-secondary ms-2">Limpar filtros</button>
+        </p>
+    </div>
+    
+    {% if producoes %}
+    <div class="card">
+        <div class="card-header bg-light">
+            <h5 class="mb-0" style="color: #007bff;"><i class="fas fa-list me-2"></i>Lista de Produções</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="tabelaProducoes">
+                    <thead class="table-primary">
+                        <tr>
+                            <th width="20%" class="border-end sortable" data-sort="produto">Produto</th>
+                            <th width="15%" class="border-end sortable" data-sort="cliente">Cliente</th>
+                            <th width="10%" class="border-end text-center sortable" data-sort="quantidade">Quantidade</th>
+                            <th width="25%" class="border-end sortable" data-sort="data">Data</th>
+                            <th width="15%" class="border-end text-center">Status</th>
+                            <th width="15%" class="sortable" data-sort="usuario">Usuário</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for producao in producoes %}
+                        <tr>
+                            <td class="border-end">{{ producao.produto }}</td>
+                            <td class="border-end">{{ producao.cliente if producao.cliente else '-' }}</td>
+                            <td class="text-center border-end">{{ producao.quantidade }}</td>
+                            <td class="border-end">
+                                {% if producao.data_formatada is defined %}
+                                    {{ producao.data_formatada }}
+                                {% else %}
+                                    {{ producao.data|formatdatetime }}
+                                {% endif %}
+                            </td>
+                            <td class="text-center border-end">
+                                <span class="badge bg-success">
+                                    Concluído
+                                </span>
+                            </td>
+                            <td>{{ producao.usuario_nome if producao.usuario_nome else 'N/A' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="badge bg-primary">Total: {{ producoes|length }}</span>
+                <nav aria-label="Navegação de páginas">
+                    <ul class="pagination justify-content-center mb-0" id="paginacaoProducoes">
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" aria-label="Anterior">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link" href="#">&raquo;</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>Nenhuma produção registrada ainda.
+    </div>
+    {% endif %}
+</div>
+
+<!-- JavaScript para implementar a paginação -->
+{% if producoes %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Configuração da paginação
+        const itemsPorPagina = 10;
+        let paginaAtual = 1;
+        const tabela = document.getElementById('tabelaProducoes');
+        const linhas = tabela ? tabela.querySelectorAll('tbody tr') : [];
+        const paginacao = document.getElementById('paginacaoProducoes');
+        
+        // Adicionar funcionalidade de ordenação às colunas
+        const thSortables = document.querySelectorAll('#tabelaProducoes th.sortable');
+        thSortables.forEach(th => {
+            th.addEventListener('click', function() {
+                const campo = this.getAttribute('data-sort');
+                ordenarTabela(campo);
+            });
+        });
+        
+        // Função para ordenar tabela
+        function ordenarTabela(campo) {
+            const tabela = document.getElementById('tabelaProducoes');
+            const thead = tabela.querySelector('thead');
+            const tbody = tabela.querySelector('tbody');
+            const linhas = Array.from(tbody.querySelectorAll('tr'));
+            
+            // Determinar a direção da ordenação
+            const th = thead.querySelector(`th[data-sort="${campo}"]`);
+            const direcaoAtual = th.classList.contains('asc') ? 'desc' : 'asc';
+            
+            // Remover classes de ordenação de todos os cabeçalhos
+            thead.querySelectorAll('th.sortable').forEach(header => {
+                header.classList.remove('asc', 'desc');
+            });
+            
+            // Adicionar classe de ordenação ao cabeçalho atual
+            th.classList.add(direcaoAtual);
+            
+            // Ordenar as linhas
+            linhas.sort((a, b) => {
+                let valorA, valorB;
+                let celIndexes = {
+                    'produto': 0,
+                    'cliente': 1,
+                    'quantidade': 2,
+                    'data': 3,
+                    'usuario': 5
+                };
+                
+                const celIndex = celIndexes[campo];
+                
+                if (campo === 'data') {
+                    // Extrair datas no formato DD/MM/YYYY às HH:MM
+                    const regex = /(\d{2})\/(\d{2})\/(\d{4}) às (\d{2}):(\d{2})/;
+                    const textoA = a.cells[celIndex].textContent.trim();
+                    const textoB = b.cells[celIndex].textContent.trim();
+                    
+                    const matchA = textoA.match(regex);
+                    const matchB = textoB.match(regex);
+                    
+                    if (matchA && matchB) {
+                        // Criar objetos Date para comparação
+                        const dateA = new Date(
+                            parseInt(matchA[3]), // ano
+                            parseInt(matchA[2]) - 1, // mês (0-based)
+                            parseInt(matchA[1]), // dia
+                            parseInt(matchA[4]), // hora
+                            parseInt(matchA[5])  // minuto
+                        );
+                        
+                        const dateB = new Date(
+                            parseInt(matchB[3]), // ano
+                            parseInt(matchB[2]) - 1, // mês (0-based)
+                            parseInt(matchB[1]), // dia
+                            parseInt(matchB[4]), // hora
+                            parseInt(matchB[5])  // minuto
+                        );
+                        
+                        return direcaoAtual === 'asc' ? dateA - dateB : dateB - dateA;
+                    }
+                    
+                    // Fallback para ordenação de texto se a análise de data falhar
+                    valorA = textoA;
+                    valorB = textoB;
+                } else if (campo === 'quantidade') {
+                    // Ordenar numericamente
+                    valorA = parseInt(a.cells[celIndex].textContent.trim()) || 0;
+                    valorB = parseInt(b.cells[celIndex].textContent.trim()) || 0;
+                    return direcaoAtual === 'asc' ? valorA - valorB : valorB - valorA;
+                } else {
+                    // Ordenação de texto para outros campos
+                    valorA = a.cells[celIndex].textContent.trim();
+                    valorB = b.cells[celIndex].textContent.trim();
+                }
+                
+                // Comparação de texto (usar collator para suporte a acentos)
+                return direcaoAtual === 'asc' 
+                    ? valorA.localeCompare(valorB, 'pt-BR')
+                    : valorB.localeCompare(valorA, 'pt-BR');
+            });
+            
+            // Remover todas as linhas da tabela
+            while (tbody.firstChild) {
+                tbody.removeChild(tbody.firstChild);
+            }
+            
+            // Adicionar as linhas reordenadas
+            linhas.forEach(linha => {
+                tbody.appendChild(linha);
+            });
+            
+            // Reiniciar paginação na primeira página
+            paginaAtual = 1;
+            mostrarLinhas();
+        }
+        
+        // Elementos para a busca de produções
+        const formBusca = document.getElementById('formBuscaProducoes');
+        const inputProduto = document.getElementById('searchProduto');
+        const inputData = document.getElementById('searchData');
+        const btnLimparFiltros = document.getElementById('limparFiltros');
+        const resultadoBusca = document.getElementById('resultadoBusca');
+        const contadorResultados = document.getElementById('contadorResultados');
+        const filtrosAplicados = document.getElementById('filtrosAplicados');
+        const produtoBadge = document.getElementById('produtoBadge');
+        const dataBadge = document.getElementById('dataBadge');
+        
+        // Armazenar os termos de busca
+        let termoProduto = '';
+        let termoData = '';
+        
+        // Executar busca
+        formBusca.addEventListener('submit', function(e) {
+            e.preventDefault();
+            termoProduto = inputProduto.value.toLowerCase().trim();
+            
+            // Ajustar a data selecionada para compensar o fuso horário
+            if (inputData.value) {
+                // Criar a data a partir do valor do input, mas garantir que estamos no fuso horário correto
+                const dataInput = new Date(inputData.value + 'T12:00:00');
+                
+                // Adicionar 12 horas para garantir que estamos no meio do dia e evitar problemas de fuso
+                dataInput.setHours(12, 0, 0, 0);
+                termoData = dataInput;
+            } else {
+                termoData = null;
+            }
+            
+            paginaAtual = 1; // Reset para a primeira página
+            filtrarLinhas();
+        });
+        
+        // Limpar filtros
+        btnLimparFiltros.addEventListener('click', function() {
+            // Limpar os campos de busca
+            inputProduto.value = '';
+            inputData.value = '';
+            termoProduto = '';
+            termoData = null;
+            paginaAtual = 1; // Reset para a primeira página
+            
+            // Ocultar resultados de busca e badges
+            resultadoBusca.style.display = 'none';
+            
+            // Limpar o contador de resultados
+            contadorResultados.textContent = '';
+            
+            filtrosAplicados.style.display = 'none';
+            produtoBadge.style.display = 'none';
+            dataBadge.style.display = 'none';
+            
+            // Verificar e ocultar alerta de "nenhum resultado"
+            const alertaInfo = document.querySelector('.alert-info');
+            if (alertaInfo && alertaInfo.style.display !== 'none') {
+                alertaInfo.style.display = 'none';
+            }
+            
+            // Mostrar a tabela se estava oculta
+            const tabelaEl = document.querySelector('#tabelaProducoes');
+            if (tabelaEl && tabelaEl.style.display === 'none') {
+                tabelaEl.style.display = '';
+            }
+            
+            // Mostrar a paginação se estava oculta
+            if (paginacao && paginacao.parentNode.parentNode.style.display === 'none') {
+                paginacao.parentNode.parentNode.style.display = '';
+            }
+            
+            // Exibir todas as linhas (sem filtro)
+            mostrarLinhas();
+        });
+        
+        // Função para filtrar as linhas com base nos termos de busca
+        function filtrarLinhas() {
+            const linhasFiltradas = [];
+            
+            // Filtrar as linhas que correspondem aos critérios
+            linhas.forEach(linha => {
+                // Inicialmente ocultando todas as linhas
+                linha.style.display = 'none';
+                
+                const textoProduto = linha.querySelector('td:nth-child(1)').textContent.toLowerCase();
+                const textoData = linha.querySelector('td:nth-child(4)').textContent.trim();
+                
+                // Verificar se corresponde ao produto (se há um termo de busca)
+                const matchProduto = !termoProduto || textoProduto.includes(termoProduto);
+                
+                // Verificar se corresponde à data (se há um termo de busca)
+                let matchData = true;
+                if (termoData) {
+                    try {
+                        // Extrair a data da string no formato DD/MM/YYYY às HH:MM
+                        const regex = /(\d{2})\/(\d{2})\/(\d{4})/;
+                        const match = textoData.match(regex);
+                        
+                        if (match) {
+                            const day = parseInt(match[1], 10);
+                            const month = parseInt(match[2], 10) - 1; // Mês em JavaScript é 0-indexed
+                            const year = parseInt(match[3], 10);
+                            
+                            // Comparar apenas as datas no formato DD/MM/YYYY
+                            const dataLinhaFormatada = `${String(day).padStart(2, '0')}/${String(month+1).padStart(2, '0')}/${year}`;
+                            const termoDataFormatada = `${String(termoData.getDate()).padStart(2, '0')}/${String(termoData.getMonth()+1).padStart(2, '0')}/${termoData.getFullYear()}`;
+                            
+                            matchData = dataLinhaFormatada === termoDataFormatada;
+                        } else {
+                            matchData = false;
+                        }
+                    } catch (error) {
+                        console.error("Erro ao analisar data:", error, textoData);
+                        matchData = false;
+                    }
+                }
+                
+                // Adicionar à lista de linhas filtradas se corresponder a ambos os critérios
+                if (matchProduto && matchData) {
+                    linhasFiltradas.push(linha);
+                }
+            });
+            
+            // Atualizar os badges de filtros aplicados
+            if (termoProduto || termoData) {
+                resultadoBusca.style.display = 'flex';
+                filtrosAplicados.style.display = 'block';
+                
+                // Atualizar contador de resultados
+                contadorResultados.textContent = linhasFiltradas.length;
+                
+                // Mostrar badge de produto se houver filtro
+                if (termoProduto) {
+                    produtoBadge.textContent = `Produto: "${termoProduto}"`;
+                    produtoBadge.style.display = 'inline-block';
+                } else {
+                    produtoBadge.style.display = 'none';
+                }
+                
+                // Mostrar badge de data se houver filtro
+                if (termoData) {
+                    const dataFormatada = termoData.toLocaleDateString('pt-BR');
+                    dataBadge.textContent = `Data: "${dataFormatada}"`;
+                    dataBadge.style.display = 'inline-block';
+                } else {
+                    dataBadge.style.display = 'none';
+                }
+            } else {
+                resultadoBusca.style.display = 'none';
+                filtrosAplicados.style.display = 'none';
+            }
+            
+            // Exibir mensagem quando não houver resultados
+            const alertaInfo = document.querySelector('.alert-info');
+            const tabelaEl = document.querySelector('#tabelaProducoes');
+            
+            if (linhasFiltradas.length === 0) {
+                // Criar ou mostrar alerta de "nenhum resultado"
+                if (!alertaInfo) {
+                    const novoAlerta = document.createElement('div');
+                    novoAlerta.className = 'alert alert-info mt-3';
+                    novoAlerta.innerHTML = '<i class="fas fa-info-circle me-2"></i>Nenhuma produção encontrada com os filtros aplicados.';
+                    tabelaEl.parentNode.appendChild(novoAlerta);
+                } else {
+                    alertaInfo.style.display = '';
+                    alertaInfo.innerHTML = '<i class="fas fa-info-circle me-2"></i>Nenhuma produção encontrada com os filtros aplicados.';
+                }
+                
+                // Ocultar a tabela
+                tabelaEl.style.display = 'none';
+                
+                // Ocultar a paginação
+                if (paginacao) {
+                    paginacao.parentNode.parentNode.style.display = 'none';
+                }
+            } else {
+                // Mostrar a tabela e ocultar alerta
+                if (alertaInfo) {
+                    alertaInfo.style.display = 'none';
+                }
+                tabelaEl.style.display = '';
+                
+                // Mostrar a paginação
+                if (paginacao) {
+                    paginacao.parentNode.parentNode.style.display = '';
+                }
+                
+                // Calcular índices das linhas a serem exibidas na página atual
+                const inicio = (paginaAtual - 1) * itemsPorPagina;
+                const fim = Math.min(inicio + itemsPorPagina, linhasFiltradas.length);
+                
+                // Mostrar apenas as linhas da página atual
+                for (let i = inicio; i < fim; i++) {
+                    if (i < linhasFiltradas.length) {
+                        linhasFiltradas[i].style.display = '';
+                    }
+                }
+                
+                // Atualizar a paginação
+                atualizarPaginacao(linhasFiltradas.length);
+            }
+        }
+        
+        // Função para mostrar as linhas da página atual
+        function mostrarLinhas() {
+            // Se há termos de busca, usar a função de filtro
+            if (termoProduto || termoData) {
+                filtrarLinhas();
+                return;
+            }
+            
+            // Ocultar todas as linhas primeiro
+            linhas.forEach(linha => {
+                linha.style.display = 'none';
+            });
+            
+            // Calcular índices das linhas a serem exibidas
+            const inicio = (paginaAtual - 1) * itemsPorPagina;
+            const fim = Math.min(inicio + itemsPorPagina, linhas.length);
+            
+            // Mostrar apenas as linhas da página atual
+            for (let i = inicio; i < fim; i++) {
+                if (i < linhas.length) {
+                    linhas[i].style.display = '';
+                }
+            }
+            
+            // Atualizar a paginação
+            atualizarPaginacao(linhas.length);
+        }
+        
+        // Função para atualizar os controles de paginação
+        function atualizarPaginacao(totalItens) {
+            const totalPaginas = Math.ceil(totalItens / itemsPorPagina);
+            
+            // Limpar paginação atual
+            paginacao.innerHTML = '';
+            
+            // Não mostrar paginação se tiver apenas uma página
+            if (totalPaginas <= 1) {
+                return;
+            }
+            
+            // Botão Anterior
+            const itemAnterior = document.createElement('li');
+            itemAnterior.className = `page-item ${paginaAtual === 1 ? 'disabled' : ''}`;
+            
+            const linkAnterior = document.createElement('a');
+            linkAnterior.className = 'page-link';
+            linkAnterior.href = '#';
+            linkAnterior.setAttribute('aria-label', 'Anterior');
+            linkAnterior.innerHTML = '&laquo;';
+            linkAnterior.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (paginaAtual > 1) {
+                    paginaAtual--;
+                    if (termoProduto || termoData) {
+                        filtrarLinhas();
+                    } else {
+                        mostrarLinhas();
+                    }
+                }
+            });
+            
+            itemAnterior.appendChild(linkAnterior);
+            paginacao.appendChild(itemAnterior);
+            
+            // Números das páginas
+            for (let i = 1; i <= totalPaginas; i++) {
+                const item = document.createElement('li');
+                item.className = `page-item ${i === paginaAtual ? 'active' : ''}`;
+                
+                const link = document.createElement('a');
+                link.className = 'page-link';
+                link.href = '#';
+                link.textContent = i;
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    paginaAtual = i;
+                    if (termoProduto || termoData) {
+                        filtrarLinhas();
+                    } else {
+                        mostrarLinhas();
+                    }
+                });
+                
+                item.appendChild(link);
+                paginacao.appendChild(item);
+            }
+            
+            // Botão Próximo
+            const itemProximo = document.createElement('li');
+            itemProximo.className = `page-item ${paginaAtual === totalPaginas ? 'disabled' : ''}`;
+            
+            const linkProximo = document.createElement('a');
+            linkProximo.className = 'page-link';
+            linkProximo.href = '#';
+            linkProximo.setAttribute('aria-label', 'Próximo');
+            linkProximo.innerHTML = '&raquo;';
+            linkProximo.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (paginaAtual < totalPaginas) {
+                    paginaAtual++;
+                    if (termoProduto || termoData) {
+                        filtrarLinhas();
+                    } else {
+                        mostrarLinhas();
+                    }
+                }
+            });
+            
+            itemProximo.appendChild(linkProximo);
+            paginacao.appendChild(itemProximo);
+        }
+        
+        // Inicializar a paginação imediatamente após carregar o DOM
+        setTimeout(function() {
+            mostrarLinhas();
+        }, 100);
+    });
+</script>
+{% endif %}
+
+<!-- Modal de Calcular Produção -->
+<div class="modal fade" id="calcularProducaoModal" tabindex="-1" aria-labelledby="calcularProducaoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="calcularProducaoModalLabel"><i class="fas fa-calculator me-2"></i>Calcular Produção Necessária</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-alert-container"></div>
+                <p class="text-muted mb-4">
+                    Selecione um produto e informe a quantidade desejada para calcular os componentes necessários.
+                </p>
+                
+                {% if produtos %}
+                <form id="form-calcular" method="post" action="{{ url_for('calcular_producao') }}" onsubmit="return false;">
+                    <div class="mb-3">
+                        <label for="produto_search" class="form-label">Buscar produto</label>
+                        <input type="text" class="form-control" id="produto_search" placeholder="Digite para buscar..." autocomplete="off">
+                        <div id="produtos_resultados" class="list-group mt-1 position-absolute w-100" style="z-index: 1000; max-height: 200px; overflow-y: auto; display: none;"></div>
+                        <input type="hidden" id="produto_id" name="produto_id" required>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="quantidade" class="form-label">Quantidade</label>
+                        <input type="number" class="form-control" id="quantidade" name="quantidade" min="1" value="1" required>
+                        <div class="form-text">Informe quantas unidades do produto deseja produzir.</div>
+                    </div>
+                </form>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Nenhum produto cadastrado.
+                    <a href="{{ url_for('adicionar_produto') }}" class="alert-link">Adicionar um produto</a> primeiro.
+                </div>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnCalcularProducao">
+                    <i class="fas fa-calculator me-1"></i>Calcular
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Resultado do Cálculo -->
+<div class="modal fade" id="resultadoCalculoModal" tabindex="-1" aria-labelledby="resultadoCalculoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="resultadoCalculoModalLabel"><i class="fas fa-list-check me-2"></i>Resultado do Cálculo</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body" id="resultado-calculo-container">
+                <!-- O conteúdo do resultado será injetado aqui via AJAX -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-primary" id="btnNovoCalculo">
+                    <i class="fas fa-calculator me-1"></i>Novo Cálculo
+                </button>
+                <button type="button" class="btn btn-success" id="btnRegistrarSaida" disabled>
+                    <i class="fas fa-arrow-up me-1"></i>Registrar Saída
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Calcular produção modal
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar as variáveis 
+        let produtoSelecionadoId = null;
+        let quantidadeSelecionada = 1;
+        let todosComponentesDisponiveis = false;
+        
+        // Elementos de busca de produto
+        const produtoSearch = document.getElementById('produto_search');
+        const produtoIdInput = document.getElementById('produto_id');
+        const produtoResultados = document.getElementById('produtos_resultados');
+        
+        // Função para buscar produtos
+        if (produtoSearch) {
+            let typingTimer;
+            const doneTypingInterval = 300; // tempo em ms
+
+            produtoSearch.addEventListener('input', function() {
+                clearTimeout(typingTimer);
+                if (this.value.length < 2) {
+                    produtoResultados.style.display = 'none';
+                    return;
+                }
+                
+                typingTimer = setTimeout(() => {
+                    const searchTerm = this.value.toLowerCase();
+                    
+                    // Fazer requisição AJAX para buscar produtos
+                    fetch(`/api/search-produtos?termo=${encodeURIComponent(searchTerm)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            produtoResultados.innerHTML = '';
+                            
+                            if (data.length === 0) {
+                                produtoResultados.innerHTML = '<div class="list-group-item">Nenhum produto encontrado</div>';
+                                produtoResultados.style.display = 'block';
+                                return;
+                            }
+                            
+                            data.forEach(produto => {
+                                const item = document.createElement('button');
+                                item.type = 'button';
+                                item.className = 'list-group-item list-group-item-action';
+                                item.textContent = produto.nome;
+                                item.dataset.id = produto.id;
+                                item.dataset.nome = produto.nome;
+                                
+                                item.addEventListener('click', function() {
+                                    produtoSearch.value = produto.nome;
+                                    produtoIdInput.value = produto.id;
+                                    produtoResultados.style.display = 'none';
+                                    produtoSelecionadoId = produto.id;
+                                });
+                                
+                                produtoResultados.appendChild(item);
+                            });
+                            
+                            produtoResultados.style.display = 'block';
+                        })
+                        .catch(error => {
+                            console.error('Erro ao buscar produtos:', error);
+                            produtoResultados.innerHTML = '<div class="list-group-item text-danger">Erro ao buscar produtos</div>';
+                            produtoResultados.style.display = 'block';
+                        });
+                }, doneTypingInterval);
+            });
+            
+            // Esconder resultados quando clicar fora
+            document.addEventListener('click', function(e) {
+                if (!produtoSearch.contains(e.target) && !produtoResultados.contains(e.target)) {
+                    produtoResultados.style.display = 'none';
+                }
+            });
+            
+            // Limpar seleção ao focar na pesquisa novamente
+            produtoSearch.addEventListener('focus', function() {
+                if (this.value.length >= 2) {
+                    produtoResultados.style.display = 'block';
+                }
+            });
+        }
+        
+        // Botões
+        const btnCalcularProducao = document.getElementById('btnCalcularProducao');
+        const btnNovoCalculo = document.getElementById('btnNovoCalculo');
+        const btnRegistrarSaida = document.getElementById('btnRegistrarSaida');
+        
+        // Manipulador para o botão de calcular produção
+        if (btnCalcularProducao) {
+            btnCalcularProducao.addEventListener('click', function() {
+                const form = document.getElementById('form-calcular');
+                const produtoId = document.getElementById('produto_id').value;
+                const quantidade = document.getElementById('quantidade').value;
+                const modalAlertContainer = document.getElementById('modal-alert-container');
+                
+                // Limpar alertas anteriores
+                modalAlertContainer.innerHTML = '';
+                
+                // Validações básicas
+                if (!produtoId) {
+                    modalAlertContainer.innerHTML = `
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            Por favor, selecione um produto.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                if (!quantidade || parseInt(quantidade) < 1) {
+                    modalAlertContainer.innerHTML = `
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            Por favor, informe uma quantidade válida.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Guardar os valores para uso posterior
+                produtoSelecionadoId = produtoId;
+                quantidadeSelecionada = quantidade;
+                
+                // Fazer requisição AJAX para obter o resultado do cálculo
+                fetch(`/api/calcular-producao?produto_id=${produtoId}&quantidade=${quantidade}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Fechar o modal de cálculo
+                        const calcularModal = bootstrap.Modal.getInstance(document.getElementById('calcularProducaoModal'));
+                        calcularModal.hide();
+                        
+                        // Preencher o modal de resultado
+                        const resultadoContainer = document.getElementById('resultado-calculo-container');
+                        resultadoContainer.innerHTML = data.html;
+                        
+                        // Verificar se todos os componentes estão disponíveis
+                        todosComponentesDisponiveis = data.todos_disponiveis;
+                        btnRegistrarSaida.disabled = !todosComponentesDisponiveis;
+                        
+                        if (!todosComponentesDisponiveis) {
+                            btnRegistrarSaida.title = 'Componentes insuficientes';
+                        } else {
+                            btnRegistrarSaida.title = '';
+                        }
+                        
+                        // Abrir o modal de resultado
+                        const resultadoModal = new bootstrap.Modal(document.getElementById('resultadoCalculoModal'));
+                        resultadoModal.show();
+                    })
+                    .catch(error => {
+                        console.error('Erro ao calcular produção:', error);
+                        modalAlertContainer.innerHTML = `
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                Ocorreu um erro ao processar sua solicitação. Tente novamente.
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+                            </div>
+                        `;
+                    });
+            });
+        }
+        
+        // Botão para abrir o modal de cálculo novamente
+        if (btnNovoCalculo) {
+            btnNovoCalculo.addEventListener('click', function() {
+                // Fechar o modal de resultado
+                const resultadoModal = bootstrap.Modal.getInstance(document.getElementById('resultadoCalculoModal'));
+                resultadoModal.hide();
+                
+                // Abrir o modal de cálculo
+                const calcularModal = new bootstrap.Modal(document.getElementById('calcularProducaoModal'));
+                calcularModal.show();
+            });
+        }
+        
+        // Botão para registrar saída
+        if (btnRegistrarSaida) {
+            btnRegistrarSaida.addEventListener('click', function() {
+                if (todosComponentesDisponiveis && produtoSelecionadoId && quantidadeSelecionada) {
+                    // Criar um formulário e enviá-lo
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = "{{ url_for('registrar_saida_produto') }}";
+                    
+                    const produtoInput = document.createElement('input');
+                    produtoInput.type = 'hidden';
+                    produtoInput.name = 'produto_id';
+                    produtoInput.value = produtoSelecionadoId;
+                    
+                    const quantidadeInput = document.createElement('input');
+                    quantidadeInput.type = 'hidden';
+                    quantidadeInput.name = 'quantidade';
+                    quantidadeInput.value = quantidadeSelecionada;
+                    
+                    form.appendChild(produtoInput);
+                    form.appendChild(quantidadeInput);
+                    
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        }
+        
+        // Limpar o formulário quando o modal for fechado
+        const calcularProducaoModal = document.getElementById('calcularProducaoModal');
+        if (calcularProducaoModal) {
+            calcularProducaoModal.addEventListener('hidden.bs.modal', function () {
+                document.getElementById('form-calcular').reset();
+                document.getElementById('modal-alert-container').innerHTML = '';
+            });
+        }
+        
+        // Capturar o evento de tecla Enter no formulário
+        const formCalcular = document.getElementById('form-calcular');
+        if (formCalcular) {
+            formCalcular.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    btnCalcularProducao.click();
+                }
+            });
+        }
+
+        // Inicializar a paginação quando o DOM estiver carregado
+        const linhas = Array.from(document.querySelectorAll('#tabelaProducoes tbody tr'));
+        const paginacao = document.getElementById('paginacaoProducoes');
+        
+        // Inicializar a paginação
+        inicializarPaginacao(linhas, paginacao, itemsPorPagina);
+        
+        // Função para inicializar a paginação
+        function inicializarPaginacao(linhas, paginacao, itemsPorPagina) {
+            const totalItens = linhas.length;
+            const totalPaginas = Math.ceil(totalItens / itemsPorPagina);
+            
+            // Ocultar todas as linhas inicialmente
+            linhas.forEach((linha, index) => {
+                if (index < itemsPorPagina) {
+                    linha.style.display = '';
+                } else {
+                    linha.style.display = 'none';
+                }
+            });
+            
+            // Construir a paginação
+            if (totalPaginas > 1) {
+                let html = `
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" aria-label="Anterior">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                `;
+                
+                for (let i = 1; i <= totalPaginas; i++) {
+                    html += `
+                        <li class="page-item ${i === 1 ? 'active' : ''}">
+                            <a class="page-link" href="#" data-pagina="${i}">${i}</a>
+                        </li>
+                    `;
+                }
+                
+                html += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" aria-label="Próximo">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                `;
+                
+                paginacao.innerHTML = html;
+                
+                // Adicionar event listeners para os links de paginação
+                const links = paginacao.querySelectorAll('.page-link');
+                links.forEach(link => {
+                    link.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        
+                        // Se for anterior ou próximo
+                        if (this.getAttribute('aria-label') === 'Anterior') {
+                            if (paginaAtual > 1) {
+                                paginaAtual--;
+                                mostrarPagina(paginaAtual);
+                            }
+                        } else if (this.getAttribute('aria-label') === 'Próximo') {
+                            if (paginaAtual < totalPaginas) {
+                                paginaAtual++;
+                                mostrarPagina(paginaAtual);
+                            }
+                        } else {
+                            // Se for um número de página
+                            paginaAtual = parseInt(this.dataset.pagina);
+                            mostrarPagina(paginaAtual);
+                        }
+                    });
+                });
+            }
+            
+            // Função para mostrar a página atual
+            function mostrarPagina(pagina) {
+                const inicio = (pagina - 1) * itemsPorPagina;
+                const fim = Math.min(inicio + itemsPorPagina, totalItens);
+                
+                // Ocultar todas as linhas
+                linhas.forEach(linha => {
+                    linha.style.display = 'none';
+                });
+                
+                // Mostrar apenas as linhas da página atual
+                for (let i = inicio; i < fim; i++) {
+                    linhas[i].style.display = '';
+                }
+                
+                // Atualizar estado ativo dos botões de paginação
+                const paginationItems = paginacao.querySelectorAll('.page-item');
+                paginationItems.forEach(item => {
+                    item.classList.remove('active');
+                    const link = item.querySelector('.page-link');
+                    if (link && link.dataset.pagina && parseInt(link.dataset.pagina) === pagina) {
+                        item.classList.add('active');
+                    }
+                });
+                
+                // Atualizar estado dos botões de anterior e próximo
+                const btnAnterior = paginacao.querySelector('.page-item:first-child');
+                const btnProximo = paginacao.querySelector('.page-item:last-child');
+                
+                if (pagina === 1) {
+                    btnAnterior.classList.add('disabled');
+                } else {
+                    btnAnterior.classList.remove('disabled');
+                }
+                
+                if (pagina === totalPaginas) {
+                    btnProximo.classList.add('disabled');
+                } else {
+                    btnProximo.classList.remove('disabled');
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

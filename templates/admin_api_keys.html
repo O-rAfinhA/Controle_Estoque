@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}Gerenciar Chaves API{% endblock %}
+
+{% block page_title %}<span style="font-weight: 700; color: #007bff;"><i class="fas fa-key me-2"></i>Gerenciar Chaves API</span>{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('admin_painel') }}">Painel Admin</a></li>
+            <li class="breadcrumb-item active">Gerenciar Chaves API</li>
+        </ol>
+    </nav>
+
+    {% if success_msg %}
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        {{ success_msg }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0" style="color: #007bff;"><i class="fas fa-key me-2"></i>Chaves API</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{{ url_for('admin_update_api_keys') }}">
+                <div class="mb-3">
+                    <label for="telegram_token" class="form-label">Token do Telegram</label>
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="telegram_token" name="telegram_token" value="{{ telegram_token }}" required>
+                        <button class="btn btn-outline-secondary toggle-password" type="button" data-target="telegram_token">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                    <div class="form-text">Token obtido do @BotFather no Telegram</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="openai_api_key" class="form-label">Chave da API OpenAI</label>
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="openai_api_key" name="openai_api_key" value="{{ openai_api_key }}" required>
+                        <button class="btn btn-outline-secondary toggle-password" type="button" data-target="openai_api_key">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                    <div class="form-text">Chave obtida no painel da OpenAI</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="allowed_users" class="form-label">IDs de usuários autorizados (separados por vírgula)</label>
+                    <input type="text" class="form-control" id="allowed_users" name="allowed_users" value="{{ allowed_users }}" required>
+                    <div class="form-text">IDs de usuários do Telegram autorizados a usar o bot</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="bot_mode" class="form-label">Modo de operação do bot</label>
+                    <select class="form-select" id="bot_mode" name="bot_mode" required>
+                        <option value="LOCAL" {% if bot_mode == 'LOCAL' %}selected{% endif %}>LOCAL</option>
+                        <option value="OPENAI" {% if bot_mode == 'OPENAI' %}selected{% endif %}>OPENAI</option>
+                        <option value="DUAL" {% if bot_mode == 'DUAL' %}selected{% endif %}>DUAL</option>
+                    </select>
+                    <div class="form-text">Define como o bot irá processar as mensagens</div>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Salvar Configurações
+                    </button>
+                    <a href="{{ url_for('admin_painel') }}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Voltar para o Painel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0" style="color: #007bff;"><i class="fas fa-info-circle me-2"></i>Informações de Segurança</h5>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-warning">
+                <i class="bi bi-shield-exclamation"></i> <strong>Importante:</strong> As chaves API são armazenadas no arquivo <code>.env</code> do servidor.
+                Este arquivo está configurado para ser ignorado pelo Git e não será incluído no repositório.
+            </div>
+            <p>Recomendações de segurança:</p>
+            <ul>
+                <li>Nunca compartilhe suas chaves API com outras pessoas</li>
+                <li>Utilize apenas chaves API com as permissões necessárias</li>
+                <li>Rotacione suas chaves periodicamente para maior segurança</li>
+                <li>Verifique os logs de uso para detectar atividades suspeitas</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Botões para mostrar/esconder senhas
+        document.querySelectorAll('.toggle-password').forEach(function(button) {
+            button.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-target');
+                const input = document.getElementById(targetId);
+                
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    this.innerHTML = '<i class="bi bi-eye-slash"></i>';
+                } else {
+                    input.type = 'password';
+                    this.innerHTML = '<i class="bi bi-eye"></i>';
+                }
+            });
+        });
+    });
+</script>
+{% endblock %} 

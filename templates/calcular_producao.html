@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Calcular Produção - Controle de Estoque{% endblock %}
+
+{% block page_title %}Calcular Produção{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('listar_produtos') }}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left me-1"></i>Voltar
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6 mx-auto">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Calcular Produção Necessária</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">
+                    Selecione um produto e informe a quantidade desejada para calcular os componentes necessários.
+                </p>
+                
+                {% if produtos %}
+                <form method="post" action="{{ url_for('calcular_producao') }}">
+                    <div class="mb-3">
+                        <label for="produto_id" class="form-label">Produto</label>
+                        <select class="form-select" id="produto_id" name="produto_id" required>
+                            <option value="">Selecione um produto</option>
+                            {% for produto in produtos %}
+                            <option value="{{ produto.id }}">{{ produto.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="quantidade" class="form-label">Quantidade</label>
+                        <input type="number" class="form-control" id="quantidade" name="quantidade" min="1" value="1" required>
+                        <div class="form-text">Informe quantas unidades do produto deseja produzir.</div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-calculator me-1"></i>Calcular
+                        </button>
+                    </div>
+                </form>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Nenhum produto cadastrado.
+                    <a href="{{ url_for('adicionar_produto') }}" class="alert-link">Adicionar um produto</a> primeiro.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,407 @@
+{% extends 'base.html' %}
+
+{% block title %}Registrar Saída - Controle de Estoque{% endblock %}
+
+{% block page_title %}<span style="font-weight: 700; color: #007bff;"><i class="fas fa-arrow-up me-2"></i>Registrar Saída</span>{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('listar_componentes') }}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left me-1"></i>Voltar
+</a>
+{% endblock %}
+
+{% block head_extras %}
+<style>
+    /* Estilos para a tabela de resultados */
+    #tabelaResultadosBusca {
+        border-collapse: collapse;
+        width: 100%;
+    }
+    
+    #tabelaResultadosBusca th {
+        background-color: #007bff;
+        color: white;
+        font-weight: 600;
+        text-align: left;
+        padding: 12px 15px;
+    }
+    
+    #tabelaResultadosBusca td {
+        padding: 10px 15px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    
+    #tabelaResultadosBusca tbody tr.disponivel {
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    #tabelaResultadosBusca tbody tr.disponivel:hover {
+        background-color: rgba(0, 123, 255, 0.1);
+    }
+    
+    /* Destacar elemento selecionado */
+    .selecionado {
+        background-color: rgba(0, 123, 255, 0.2) !important;
+    }
+    
+    /* Estilo para os itens sem estoque */
+    #tabelaResultadosBusca tbody tr.indisponivel {
+        background-color: rgba(220, 53, 69, 0.1);
+        opacity: 0.8;
+    }
+    
+    /* Estilo para a quantidade */
+    .quantidade-badge {
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-weight: bold;
+        display: inline-block;
+        min-width: 60px;
+        text-align: center;
+    }
+    
+    .quantidade-disponivel {
+        background-color: #007bff;
+        color: white;
+    }
+    
+    .quantidade-indisponivel {
+        background-color: #dc3545;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <!-- Buscador de Componentes -->
+        <div class="card mb-4">
+            <div class="card-body py-3">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-9">
+                        <label for="searchComponente" class="form-label mb-1" style="font-size: 14.4px; font-weight: bold;">Buscar componente por código ou nome:</label>
+                        <input type="text" class="form-control" id="searchComponente" placeholder="Digite para buscar um componente...">
+                    </div>
+                    <div class="col-md-3">
+                        <button type="button" class="btn btn-primary w-100" id="btnBuscarComponente">
+                            <i class="fas fa-search me-1"></i>Buscar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulário de Saída -->
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0" style="color: #007bff;"><i class="fas fa-minus-circle me-2"></i>Registrar Saída de Estoque</h5>
+            </div>
+            <div class="card-body">
+                <!-- Mensagem inicial -->
+                <div id="mensagemInicial" class="alert alert-info mb-4">
+                    <p class="mb-0"><i class="fas fa-info-circle me-2"></i>Digite o código ou nome do componente na busca acima para selecionar um item e registrar saída.</p>
+                    <p class="mt-2 mb-0"><i class="fas fa-exclamation-triangle me-2 text-warning"></i><small>Somente componentes com estoque disponível podem ser selecionados.</small></p>
+                </div>
+                
+                <!-- Resultados da busca -->
+                <div id="resultadoBusca" style="display: none;" class="mb-4">
+                    <div class="alert alert-info mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <p class="mb-0"><span id="contadorResultados">0</span> componente(s) encontrado(s)</p>
+                            <button id="fecharBusca" class="btn btn-sm btn-outline-primary">Fechar resultados</button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="tabelaResultadosBusca">
+                            <thead>
+                                <tr>
+                                    <th width="20%">Código</th>
+                                    <th width="60%">Nome</th>
+                                    <th width="20%" class="text-center">Estoque</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Resultados da busca serão inseridos aqui -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Formulário de saída -->
+                <form method="post" action="{{ url_for('registrar_saida') }}" id="formSaida">
+                    <input type="hidden" id="codigo" name="codigo" required>
+                    
+                    <!-- Componente selecionado -->
+                    <div id="componenteSelecionado" class="alert alert-primary mb-3" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <p class="mb-0"><strong>Componente selecionado:</strong> <span id="nomeComponente"></span></p>
+                                <p class="mb-0"><small>Código: <span id="codigoComponente"></span> | Estoque atual: <span id="quantidadeAtual" class="fw-bold"></span></small></p>
+                            </div>
+                            <button type="button" class="btn-close" id="limparSelecao" aria-label="Fechar"></button>
+                        </div>
+                    </div>
+                    
+                    <!-- Campo de quantidade a remover -->
+                    <div class="mb-3">
+                        <label for="quantidade" class="form-label">Quantidade a Remover</label>
+                        <input type="number" class="form-control" id="quantidade" name="quantidade" min="1" value="1" required>
+                    </div>
+                    
+                    <!-- Botões -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="reset" class="btn btn-outline-secondary me-md-2">Limpar</button>
+                        <button type="submit" class="btn btn-danger d-flex align-items-center justify-content-center gap-2 py-2 fw-medium" id="btnSubmit" disabled>
+                            <i class="fas fa-arrow-up"></i>
+                            <span>Registrar Saída</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dicas -->
+<div class="row mt-4">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0" style="color: #007bff;">Informações</h5>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>A saída de estoque diminui a quantidade disponível do componente selecionado.</li>
+                    <li>Não é possível remover mais itens do que existem em estoque.</li>
+                    <li>Todas as saídas são registradas no histórico de transações.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dados dos componentes em formato JSON para JavaScript -->
+<script id="componentes-data" type="application/json">
+[
+    {% for componente in componentes %}
+    {
+        "codigo": "{{ componente.codigo }}",
+        "nome": "{{ componente.nome }}",
+        "quantidade": {% if componente.quantidade is defined %}{{ componente.quantidade }}{% else %}0{% endif %}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+]
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Elementos DOM
+    const searchInput = document.getElementById('searchComponente');
+    const btnBuscar = document.getElementById('btnBuscarComponente');
+    const resultadoBusca = document.getElementById('resultadoBusca');
+    const mensagemInicial = document.getElementById('mensagemInicial');
+    const fecharBusca = document.getElementById('fecharBusca');
+    const contadorResultados = document.getElementById('contadorResultados');
+    const tabelaResultados = document.getElementById('tabelaResultadosBusca').querySelector('tbody');
+    const componenteSelecionado = document.getElementById('componenteSelecionado');
+    const codigoInput = document.getElementById('codigo');
+    const nomeComponenteSpan = document.getElementById('nomeComponente');
+    const codigoComponenteSpan = document.getElementById('codigoComponente');
+    const quantidadeAtualSpan = document.getElementById('quantidadeAtual');
+    const btnSubmit = document.getElementById('btnSubmit');
+    const limparSelecao = document.getElementById('limparSelecao');
+    const quantidadeInput = document.getElementById('quantidade');
+    
+    // Carregar componentes do elemento JSON
+    let componentes = [];
+    try {
+        const componentesJson = document.getElementById('componentes-data').textContent;
+        componentes = JSON.parse(componentesJson);
+    } catch (e) {
+        console.error("Erro ao carregar componentes:", e);
+        componentes = [];
+    }
+    
+    // Função para buscar componentes
+    function buscarComponentes() {
+        const termo = searchInput.value.toLowerCase().trim();
+        
+        // Verificar se há termo de busca
+        if (termo === '') {
+            alert('Digite um termo para buscar componentes');
+            return;
+        }
+        
+        // Mostrar área de resultados e esconder mensagem inicial
+        resultadoBusca.style.display = 'block';
+        mensagemInicial.style.display = 'none';
+        
+        // Filtrar componentes pelo termo de busca
+        let resultados = componentes.filter(comp => 
+            comp.codigo.toLowerCase().includes(termo) || 
+            comp.nome.toLowerCase().includes(termo)
+        );
+        
+        // Atualizar contador e limpar tabela
+        contadorResultados.textContent = resultados.length;
+        tabelaResultados.innerHTML = '';
+        
+        // Preencher a tabela com os resultados
+        if (resultados.length > 0) {
+            resultados.forEach(comp => {
+                // Verificar se o componente tem estoque
+                const temEstoque = parseInt(comp.quantidade) > 0;
+                
+                const tr = document.createElement('tr');
+                
+                // Adicionar classe disponível/indisponível com base no estoque
+                if (temEstoque) {
+                    tr.classList.add('disponivel');
+                } else {
+                    tr.classList.add('indisponivel');
+                }
+                
+                tr.innerHTML = `
+                    <td>${comp.codigo}</td>
+                    <td>${comp.nome}</td>
+                    <td class="text-center">
+                        <span class="quantidade-badge ${temEstoque ? 'quantidade-disponivel' : 'quantidade-indisponivel'}">${comp.quantidade}</span>
+                    </td>
+                `;
+                
+                // Adicionar dados ao elemento da linha
+                tr.dataset.codigo = comp.codigo;
+                tr.dataset.nome = comp.nome;
+                tr.dataset.quantidade = comp.quantidade;
+                
+                // Adicionar evento de clique apenas se tiver estoque
+                if (temEstoque) {
+                    tr.addEventListener('click', function() {
+                        selecionarComponente(this);
+                    });
+                }
+                
+                tabelaResultados.appendChild(tr);
+            });
+        } else {
+            // Exibir mensagem quando não há resultados
+            tabelaResultados.innerHTML = `
+                <tr>
+                    <td colspan="3" class="text-center py-3">
+                        <i class="fas fa-info-circle me-2"></i>Nenhum componente encontrado com o termo "${termo}".
+                    </td>
+                </tr>
+            `;
+        }
+    }
+    
+    // Função para selecionar um componente
+    function selecionarComponente(elemento) {
+        // Remover seleção anterior
+        const linhasSelecionadas = tabelaResultados.querySelectorAll('tr.selecionado');
+        linhasSelecionadas.forEach(linha => linha.classList.remove('selecionado'));
+        
+        // Adicionar classe selecionado
+        elemento.classList.add('selecionado');
+        
+        // Obter dados do componente
+        const codigo = elemento.dataset.codigo;
+        const nome = elemento.dataset.nome;
+        const quantidade = elemento.dataset.quantidade;
+        
+        console.log("Componente selecionado:", {codigo, nome, quantidade});
+        
+        // Preencher o formulário
+        codigoInput.value = codigo;
+        nomeComponenteSpan.textContent = nome;
+        codigoComponenteSpan.textContent = codigo;
+        quantidadeAtualSpan.textContent = quantidade;
+        
+        // Limitar a quantidade máxima que pode ser retirada
+        quantidadeInput.max = quantidade;
+        quantidadeInput.value = 1;
+        
+        // Exibir o bloco de componente selecionado
+        componenteSelecionado.style.display = 'block';
+        
+        // Habilitar o botão de envio
+        btnSubmit.disabled = false;
+    }
+    
+    // Verificar quantidade disponível ao alterar o valor
+    quantidadeInput.addEventListener('input', function() {
+        const quantidadeAtual = parseInt(quantidadeAtualSpan.textContent);
+        const valorDigitado = parseInt(this.value);
+        
+        if (isNaN(valorDigitado) || valorDigitado <= 0) {
+            btnSubmit.disabled = true;
+            return;
+        }
+        
+        // Limitar a quantidade máxima ao estoque atual
+        if (valorDigitado > quantidadeAtual) {
+            this.value = quantidadeAtual;
+        }
+        
+        btnSubmit.disabled = valorDigitado > quantidadeAtual;
+    });
+    
+    // Event listeners
+    btnBuscar.addEventListener('click', buscarComponentes);
+    
+    searchInput.addEventListener('keyup', function(e) {
+        if (e.key === 'Enter') {
+            buscarComponentes();
+        }
+    });
+    
+    limparSelecao.addEventListener('click', function() {
+        componenteSelecionado.style.display = 'none';
+        codigoInput.value = '';
+        btnSubmit.disabled = true;
+        
+        // Remover seleção da tabela
+        const linhasSelecionadas = tabelaResultados.querySelectorAll('tr.selecionado');
+        linhasSelecionadas.forEach(linha => linha.classList.remove('selecionado'));
+    });
+    
+    fecharBusca.addEventListener('click', function() {
+        resultadoBusca.style.display = 'none';
+        
+        // Mostrar mensagem inicial se não houver componente selecionado
+        if (componenteSelecionado.style.display === 'none') {
+            mensagemInicial.style.display = 'block';
+        }
+    });
+    
+    // Verificar se há um código na URL para pré-selecionar
+    const urlParams = new URLSearchParams(window.location.search);
+    const codigoParam = urlParams.get('codigo');
+    
+    if (codigoParam) {
+        const componenteEncontrado = componentes.find(comp => comp.codigo === codigoParam);
+        if (componenteEncontrado && parseInt(componenteEncontrado.quantidade) > 0) {
+            // Preencher o formulário com o componente da URL
+            codigoInput.value = componenteEncontrado.codigo;
+            nomeComponenteSpan.textContent = componenteEncontrado.nome;
+            codigoComponenteSpan.textContent = componenteEncontrado.codigo;
+            quantidadeAtualSpan.textContent = componenteEncontrado.quantidade;
+            
+            // Limitar a quantidade máxima que pode ser retirada
+            quantidadeInput.max = componenteEncontrado.quantidade;
+            
+            // Exibir o bloco de componente selecionado
+            componenteSelecionado.style.display = 'block';
+            mensagemInicial.style.display = 'none';
+            
+            // Habilitar o botão de envio
+            btnSubmit.disabled = false;
+        }
+    }
+});
+</script>
+{% endblock %}

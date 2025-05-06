@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">Relatório Comparativo de Fornecedores</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Início</a></li>
+                        <li class="breadcrumb-item active">Relatório Comparativo</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="container-fluid">
+            <!-- Formulário para selecionar período -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="card-title">Selecione o Período</h3>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('relatorio_comparativo') }}" method="post">
+                        <div class="row">
+                            <div class="col-md-5">
+                                <div class="form-group">
+                                    <label for="data_inicio">Data Inicial:</label>
+                                    <input type="date" class="form-control" id="data_inicio" name="data_inicio" value="{{ data_inicio if data_inicio else '' }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <div class="form-group">
+                                    <label for="data_fim">Data Final:</label>
+                                    <input type="date" class="form-control" id="data_fim" name="data_fim" value="{{ data_fim if data_fim else '' }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary btn-block">Gerar Relatório</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            {% if conteudo_relatorio %}
+                {{ conteudo_relatorio|safe }}
+            {% else %}
+                <div class="alert alert-info">
+                    <h5><i class="icon fas fa-info"></i> Instruções</h5>
+                    <p>Selecione um período para gerar o relatório comparativo de fornecedores.</p>
+                    <p>O relatório irá analisar o desempenho dos fornecedores com base em recebimentos realizados no período selecionado.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Scripts adicionais específicos para esta página
+    $(document).ready(function() {
+        {% if conteudo_relatorio %}
+            // Manipulação da exibição da análise de produto quando houver conteúdo
+            const produtoSelect = document.getElementById('produtoSelecionado');
+            if (produtoSelect) {
+                produtoSelect.addEventListener('change', function() {
+                    const analiseDiv = document.getElementById('analise-produto');
+                    const semAnaliseDiv = document.getElementById('sem-analise-produto');
+                    
+                    if (this.value) {
+                        analiseDiv.style.display = 'block';
+                        semAnaliseDiv.style.display = 'none';
+                        document.querySelector('.text-produto-selecionado').textContent = 
+                            this.options[this.selectedIndex].text;
+                    } else {
+                        analiseDiv.style.display = 'none';
+                        semAnaliseDiv.style.display = 'block';
+                    }
+                });
+            }
+        {% endif %}
+    });
+</script>
+{% endblock %} 

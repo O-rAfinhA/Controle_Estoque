@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Adicionar Componente - Controle de Estoque{% endblock %}
+
+{% block page_title %}Adicionar Componente{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('listar_componentes') }}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left me-1"></i>Voltar
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <div class="form-container">
+            <form method="post" action="{{ url_for('adicionar_componente') }}">
+                <div class="mb-3">
+                    <label for="codigo" class="form-label">Código</label>
+                    <input type="number" class="form-control" id="codigo" name="codigo" required>
+                    <div class="form-text">Código único numérico para identificar o componente.</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="nome" class="form-label">Nome</label>
+                    <input type="text" class="form-control" id="nome" name="nome" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="quantidade" class="form-label">Quantidade Inicial</label>
+                    <input type="number" class="form-control" id="quantidade" name="quantidade" min="0" value="0" required>
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <button type="reset" class="btn btn-outline-secondary me-md-2">Limpar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Salvar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

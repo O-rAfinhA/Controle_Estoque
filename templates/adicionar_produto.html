@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+
+{% block title %}Adicionar Produto{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('listar_produtos') }}">Produtos</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Adicionar Produto</li>
+        </ol>
+    </nav>
+
+    <div class="card">
+        <div class="card-header">
+            <h4>Adicionar Novo Produto</h4>
+        </div>
+        <div class="card-body">
+            <form id="form-produto" method="post">
+                <div class="mb-3">
+                    <label for="nome" class="form-label">Nome do Produto</label>
+                    <input type="text" class="form-control" id="nome" name="nome" value="{{ nome }}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="descricao" class="form-label">Cliente</label>
+                    <input type="text" class="form-control" id="descricao" name="descricao" value="{{ descricao }}" list="clientes">
+                    <datalist id="clientes">
+                        {% for cliente in clientes %}
+                        <option value="{{ cliente.descricao }}">
+                        {% endfor %}
+                    </datalist>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Componentes</label>
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <select class="form-select" id="componente-select">
+                                        <option value="">Selecione um componente...</option>
+                                        {% for componente in componentes %}
+                                        <option value="{{ componente.codigo }}">{{ componente.nome }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="number" class="form-control" id="quantidade-componente" placeholder="Quantidade" min="1" value="1">
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="button" class="btn btn-success w-100" id="adicionar-componente">
+                                        <i class="bi bi-plus-circle"></i> Adicionar
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-striped" id="tabela-componentes">
+                                    <thead>
+                                        <tr>
+                                            <th>Código</th>
+                                            <th>Nome</th>
+                                            <th>Quantidade</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="componentes-lista">
+                                        <!-- Lista de componentes adicionados -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <div class="alert alert-info mt-3" id="sem-componentes">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Nenhum componente adicionado ao produto.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <input type="hidden" name="componentes_json" id="componentes-json" value="[]">
+                
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('listar_produtos') }}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left me-1"></i> Voltar
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save me-1"></i> Salvar Produto
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Array para armazenar os componentes do produto
+    let componentesLista = [
+        {% if componentes_lista %}
+            {% for componente in componentes_lista %}
+                {
+                    codigo: "{{ componente.codigo }}",
+                    nome: "{{ componente.nome }}",
+                    quantidade: {{ componente.quantidade }}
+                }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        {% endif %}
+    ];
+    
+    // Dados dos componentes para referência rápida
+    const componentesData = {
+        {% for componente in componentes %}
+        "{{ componente.codigo }}": {
+            codigo: "{{ componente.codigo }}",
+            nome: "{{ componente.nome }}"
+        },
+        {% endfor %}
+    };
+    
+    // Função para atualizar a lista de componentes na tabela
+    function atualizarListaComponentes() {
+        const tbody = document.getElementById('componentes-lista');
+        const semComponentesMsg = document.getElementById('sem-componentes');
+        
+        // Limpa a tabela
+        tbody.innerHTML = '';
+        
+        // Atualiza o JSON hidden field
+        document.getElementById('componentes-json').value = JSON.stringify(componentesLista);
+        
+        // Mostra/esconde a mensagem "sem componentes"
+        if (componentesLista.length === 0) {
+            semComponentesMsg.style.display = 'block';
+            return;
+        }
+        
+        semComponentesMsg.style.display = 'none';
+        
+        // Adiciona os componentes na tabela
+        componentesLista.forEach((componente, index) => {
+            const tr = document.createElement('tr');
+            
+            tr.innerHTML = `
+                <td>${componente.codigo}</td>
+                <td>${componente.nome}</td>
+                <td>${componente.quantidade}</td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="removerComponente(${index})">
+                        <i class="bi bi-trash"></i> Remover
+                    </button>
+                </td>
+            `;
+            
+            tbody.appendChild(tr);
+        });
+    }
+    
+    // Função para remover um componente da lista
+    function removerComponente(index) {
+        componentesLista.splice(index, 1);
+        atualizarListaComponentes();
+    }
+    
+    // Quando o documento estiver pronto
+    document.addEventListener('DOMContentLoaded', function() {
+        const btnAdicionar = document.getElementById('adicionar-componente');
+        const selectComponente = document.getElementById('componente-select');
+        const inputQuantidade = document.getElementById('quantidade-componente');
+        
+        // Inicializa a lista de componentes
+        atualizarListaComponentes();
+        
+        // Handler para adicionar componente
+        btnAdicionar.addEventListener('click', function() {
+            const codigo = selectComponente.value;
+            const quantidade = parseInt(inputQuantidade.value);
+            
+            if (!codigo) {
+                alert('Selecione um componente.');
+                return;
+            }
+            
+            if (!quantidade || quantidade < 1) {
+                alert('A quantidade deve ser maior que zero.');
+                return;
+            }
+            
+            // Verifica se o componente já existe na lista
+            const componenteExistente = componentesLista.findIndex(c => c.codigo === codigo);
+            
+            if (componenteExistente >= 0) {
+                // Atualiza a quantidade se já existir
+                componentesLista[componenteExistente].quantidade = quantidade;
+            } else {
+                // Adiciona novo componente
+                componentesLista.push({
+                    codigo: codigo,
+                    nome: componentesData[codigo].nome,
+                    quantidade: quantidade
+                });
+            }
+            
+            // Atualiza a tabela
+            atualizarListaComponentes();
+            
+            // Limpa os campos
+            selectComponente.value = '';
+            inputQuantidade.value = '1';
+        });
+        
+        // Evento submit do formulário
+        document.getElementById('form-produto').addEventListener('submit', function(event) {
+            if (componentesLista.length === 0) {
+                event.preventDefault();
+                alert('Adicione pelo menos um componente ao produto.');
+                return false;
+            }
+            
+            return true;
+        });
+    });
+</script>
+{% endblock %}

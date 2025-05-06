@@ -1,0 +1,374 @@
+{% extends "layout.html" %}
+
+{% block title %}Relatórios de Análise de Fornecedores{% endblock %}
+
+{% block page_actions %}
+<div class="row">
+    <div class="col">
+        <button onclick="printReport()" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-print"></i> Imprimir
+        </button>
+        <div class="btn-group">
+            <button type="button" class="btn btn-outline-primary btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <i class="fas fa-download"></i> Exportar
+            </button>
+            <div class="dropdown-menu">
+                <a class="dropdown-item" href="#" onclick="exportReport('pdf')">PDF</a>
+                <a class="dropdown-item" href="#" onclick="exportReport('excel')">Excel</a>
+                <a class="dropdown-item" href="#" onclick="exportReport('csv')">CSV</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .no-data-message {
+        padding: 30px;
+        text-align: center;
+        color: #6c757d;
+    }
+    
+    .report-card {
+        margin-bottom: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+    
+    .report-card .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #e9ecef;
+        padding: 15px 20px;
+    }
+    
+    .report-metrics {
+        display: flex;
+        flex-wrap: wrap;
+        margin: 0 -10px;
+    }
+    
+    .metric-card {
+        flex: 1 0 200px;
+        margin: 10px;
+        padding: 15px;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+    
+    .metric-value {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    
+    .metric-label {
+        color: #6c757d;
+        font-size: 14px;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: #f5f5f5;
+    }
+    
+    .performance-positive {
+        color: #28a745;
+    }
+    
+    .performance-negative {
+        color: #dc3545;
+    }
+    
+    .performance-neutral {
+        color: #fd7e14;
+    }
+    
+    .supplier-details {
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+    }
+    
+    .clickable-row {
+        cursor: pointer;
+    }
+    
+    .transition-icon {
+        transition: transform 0.2s ease;
+    }
+    
+    /* Estilos para impressão */
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        
+        .page-content {
+            margin: 0;
+            padding: 0;
+        }
+        
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="page-title">Relatórios de Análise de Fornecedores</h2>
+            <p class="text-muted">Analise o desempenho dos fornecedores com relatórios detalhados e dados comparativos.</p>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12">
+            <!-- Formulário de geração de relatório -->
+            <div class="card report-card no-print">
+                <div class="card-header d-flex align-items-center">
+                    <h5 class="mb-0">Parâmetros do Relatório</h5>
+                </div>
+                <div class="card-body">
+                    <form id="report_form" method="get" action="{{ url_for('relatorios_analise') }}">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="report_type">Tipo de Relatório</label>
+                                    <select class="form-control" id="report_type" name="report_type" required>
+                                        <option value="performance" {% if request.args.get('report_type') == 'performance' %}selected{% endif %}>Desempenho Geral</option>
+                                        <option value="critical" {% if request.args.get('report_type') == 'critical' %}selected{% endif %}>Fornecedores Críticos</option>
+                                        <option value="trend" {% if request.args.get('report_type') == 'trend' %}selected{% endif %}>Tendências de Desempenho</option>
+                                        <option value="comparative" {% if request.args.get('report_type') == 'comparative' %}selected{% endif %}>Análise Comparativa</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="period_type">Tipo de Período</label>
+                                    <select class="form-control" id="period_type" name="period_type" required>
+                                        <option value="month" {% if request.args.get('period_type') == 'month' %}selected{% endif %}>Mensal</option>
+                                        <option value="quarter" {% if request.args.get('period_type') == 'quarter' %}selected{% endif %}>Trimestral</option>
+                                        <option value="year" {% if request.args.get('period_type') == 'year' %}selected{% endif %}>Anual</option>
+                                        <option value="custom" {% if request.args.get('period_type') == 'custom' %}selected{% endif %}>Personalizado</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="supplier_filter">Filtro de Fornecedor</label>
+                                    <select class="form-control" id="supplier_filter" name="supplier_filter" required>
+                                        <option value="all" {% if request.args.get('supplier_filter') == 'all' %}selected{% endif %}>Todos os Fornecedores</option>
+                                        <option value="active" {% if request.args.get('supplier_filter') == 'active' %}selected{% endif %}>Apenas Ativos</option>
+                                        <option value="specific" {% if request.args.get('supplier_filter') == 'specific' %}selected{% endif %}>Fornecedor Específico</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <!-- Campos de período -->
+                            <div id="month_period_container" class="col-md-4 period-field" style="display: none;">
+                                <div class="form-group">
+                                    <label for="month_period">Mês de Referência</label>
+                                    <select class="form-control" id="month_period" name="month_period">
+                                        {% for year in available_years %}
+                                            {% for month in range(1, 13) %}
+                                                <option value="{{ year }}-{{ month }}" {% if request.args.get('month_period') == year|string + '-' + month|string %}selected{% endif %}>
+                                                    {{ month }}/{{ year }}
+                                                </option>
+                                            {% endfor %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div id="quarter_period_container" class="col-md-4 period-field" style="display: none;">
+                                <div class="form-group">
+                                    <label for="quarter_period">Trimestre de Referência</label>
+                                    <select class="form-control" id="quarter_period" name="quarter_period">
+                                        {% for year in available_years %}
+                                            {% for quarter in range(1, 5) %}
+                                                <option value="{{ year }}-{{ quarter }}" {% if request.args.get('quarter_period') == year|string + '-' + quarter|string %}selected{% endif %}>
+                                                    {{ quarter }}º Trimestre/{{ year }}
+                                                </option>
+                                            {% endfor %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div id="year_period_container" class="col-md-4 period-field" style="display: none;">
+                                <div class="form-group">
+                                    <label for="year_period">Ano de Referência</label>
+                                    <select class="form-control" id="year_period" name="year_period">
+                                        {% for year in available_years %}
+                                            <option value="{{ year }}" {% if request.args.get('year_period') == year|string %}selected{% endif %}>
+                                                {{ year }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div id="date_range_container" class="col-md-8 period-field" style="display: none;">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="start_date">Data Inicial</label>
+                                            <input type="date" class="form-control" id="start_date" name="start_date" value="{{ request.args.get('start_date', '') }}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="end_date">Data Final</label>
+                                            <input type="date" class="form-control" id="end_date" name="end_date" value="{{ request.args.get('end_date', '') }}">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Campo de fornecedor específico -->
+                            <div id="specific_supplier_container" class="col-md-4" style="display: none;">
+                                <div class="form-group">
+                                    <label for="supplier_id">Fornecedor</label>
+                                    <select class="form-control" id="supplier_id" name="supplier_id">
+                                        <option value="">Selecione um fornecedor</option>
+                                        {% for supplier in suppliers %}
+                                            <option value="{{ supplier.id }}" {% if request.args.get('supplier_id')|int == supplier.id %}selected{% endif %}>
+                                                {{ supplier.nome }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="performance_threshold">Limite de Desempenho Alvo (%)</label>
+                                    <input type="number" class="form-control" id="performance_threshold" name="performance_threshold" 
+                                           min="0" max="100" step="1" value="{{ request.args.get('performance_threshold', '85') }}">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-chart-bar"></i> Gerar Relatório
+                                </button>
+                                <button type="button" onclick="resetForm()" class="btn btn-outline-secondary ml-2">
+                                    <i class="fas fa-undo"></i> Limpar
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Exibição do relatório gerado -->
+            {% if periodo_selecionado %}
+            <div class="alert alert-info mb-4">
+                <i class="fas fa-info-circle"></i> Relatório gerado para o período: <strong>{{ periodo_selecionado }}</strong>
+            </div>
+            
+            <!-- Conteúdo dinâmico do relatório gerado -->
+            {{ conteudo_relatorio|safe }}
+            
+            {% else %}
+            <div class="card">
+                <div class="card-body no-data-message">
+                    <i class="fas fa-chart-bar fa-3x mb-3"></i>
+                    <h4>Selecione os parâmetros e clique em "Gerar Relatório"</h4>
+                    <p class="text-muted">Utilize o formulário acima para definir o tipo de relatório e período que deseja analisar.</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar o gerenciamento de campos de período
+        updatePeriodFields();
+        updateSupplierFields();
+        
+        // Event listeners para alterações nos filtros
+        document.getElementById('period_type').addEventListener('change', updatePeriodFields);
+        document.getElementById('supplier_filter').addEventListener('change', updateSupplierFields);
+        
+        // Event listeners para linhas clicáveis na tabela
+        document.querySelectorAll('.clickable-row').forEach(row => {
+            row.addEventListener('click', function() {
+                // Alternar classe para o ícone
+                const icon = this.querySelector('.transition-icon');
+                if (icon) {
+                    icon.classList.toggle('fa-caret-right');
+                    icon.classList.toggle('fa-caret-down');
+                }
+            });
+        });
+    });
+    
+    // Função para atualizar a visibilidade dos campos de período
+    function updatePeriodFields() {
+        const periodType = document.getElementById('period_type').value;
+        
+        // Ocultar todos os campos de período
+        document.querySelectorAll('.period-field').forEach(field => {
+            field.style.display = 'none';
+        });
+        
+        // Mostrar apenas o campo relevante para o tipo de período selecionado
+        if (periodType === 'month') {
+            document.getElementById('month_period_container').style.display = 'block';
+        } else if (periodType === 'quarter') {
+            document.getElementById('quarter_period_container').style.display = 'block';
+        } else if (periodType === 'year') {
+            document.getElementById('year_period_container').style.display = 'block';
+        } else if (periodType === 'custom') {
+            document.getElementById('date_range_container').style.display = 'block';
+        }
+    }
+    
+    // Função para atualizar a visibilidade dos campos de fornecedor
+    function updateSupplierFields() {
+        const supplierFilter = document.getElementById('supplier_filter').value;
+        const specificSupplierContainer = document.getElementById('specific_supplier_container');
+        
+        // Mostrar campo de fornecedor específico apenas quando relevante
+        if (supplierFilter === 'specific') {
+            specificSupplierContainer.style.display = 'block';
+        } else {
+            specificSupplierContainer.style.display = 'none';
+        }
+    }
+    
+    // Função para resetar o formulário
+    function resetForm() {
+        document.getElementById('report_form').reset();
+        updatePeriodFields();
+        updateSupplierFields();
+    }
+    
+    // Função para imprimir o relatório atual
+    function printReport() {
+        window.print();
+    }
+    
+    // Função para exportar o relatório (stub)
+    function exportReport(format) {
+        alert('Exportação para ' + format + ' será implementada em uma atualização futura.');
+    }
+</script>
+{% endblock %} 

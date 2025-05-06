@@ -1,0 +1,232 @@
+<!-- Tab de Fornecedores -->
+<div class="tab-pane fade {% if tab_ativa == 'fornecedores' %}show active{% endif %}" id="fornecedores" role="tabpanel" aria-labelledby="fornecedores-tab">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="fas fa-truck me-2"></i>Fornecedores</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalFornecedor">
+            <i class="fas fa-plus me-1"></i> Novo Fornecedor
+        </button>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <div class="input-group">
+                <input type="text" class="form-control" id="searchFornecedor" placeholder="Buscar fornecedor...">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="tabelaFornecedores">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nome</th>
+                            <th>CNPJ</th>
+                            <th>Contato</th>
+                            <th>Email</th>
+                            <th>Telefone</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for fornecedor in fornecedores %}
+                        <tr>
+                            <td>{{ fornecedor.nome }}</td>
+                            <td>{{ fornecedor.cnpj }}</td>
+                            <td>{{ fornecedor.contato }}</td>
+                            <td>{{ fornecedor.email }}</td>
+                            <td>{{ fornecedor.telefone }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if fornecedor.ativo else 'secondary' }}">
+                                    {{ 'Ativo' if fornecedor.ativo else 'Inativo' }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-primary editar-fornecedor" 
+                                            data-id="{{ fornecedor.id }}"
+                                            data-nome="{{ fornecedor.nome }}"
+                                            data-cnpj="{{ fornecedor.cnpj }}"
+                                            data-contato="{{ fornecedor.contato }}"
+                                            data-email="{{ fornecedor.email }}"
+                                            data-telefone="{{ fornecedor.telefone }}"
+                                            data-endereco="{{ fornecedor.endereco }}"
+                                            data-ativo="{{ fornecedor.ativo }}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger excluir-fornecedor" 
+                                            data-id="{{ fornecedor.id }}" 
+                                            data-nome="{{ fornecedor.nome }}">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-light">
+            <nav aria-label="Navegação de páginas">
+                <ul class="pagination justify-content-center mb-0" id="paginacaoFornecedores">
+                    <!-- Paginação será preenchida via JavaScript -->
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- Adicionar o JavaScript para implementar a paginação ao final do arquivo -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Configuração da paginação para fornecedores
+        const itemsPorPagina = 10;
+        let paginaAtual = 1;
+        const tabela = document.getElementById('tabelaFornecedores');
+        const linhas = tabela.querySelectorAll('tbody tr');
+        const paginacao = document.getElementById('paginacaoFornecedores');
+        let termoBusca = '';
+        
+        // Função para mostrar as linhas da página atual
+        function mostrarLinhas() {
+            // Ocultar todas as linhas
+            linhas.forEach(linha => {
+                linha.style.display = 'none';
+            });
+            
+            // Filtrar linhas com base no termo de busca
+            const linhasVisiveis = [...linhas].filter(linha => {
+                if (termoBusca === '') return true;
+                
+                const nome = linha.cells[0].textContent.toLowerCase();
+                const cnpj = linha.cells[1].textContent.toLowerCase();
+                const contato = linha.cells[2].textContent.toLowerCase();
+                const email = linha.cells[3].textContent.toLowerCase();
+                const telefone = linha.cells[4].textContent.toLowerCase();
+                
+                return nome.includes(termoBusca) || 
+                       cnpj.includes(termoBusca) || 
+                       contato.includes(termoBusca) ||
+                       email.includes(termoBusca) ||
+                       telefone.includes(termoBusca);
+            });
+            
+            // Calcular índices das linhas a serem exibidas
+            const inicio = (paginaAtual - 1) * itemsPorPagina;
+            const fim = inicio + itemsPorPagina;
+            
+            // Mostrar apenas as linhas da página atual
+            linhasVisiveis.slice(inicio, fim).forEach(linha => {
+                linha.style.display = '';
+            });
+            
+            // Atualizar a paginação
+            atualizarPaginacao(linhasVisiveis.length);
+        }
+        
+        // Função para atualizar os controles de paginação
+        function atualizarPaginacao(totalItens) {
+            const totalPaginas = Math.ceil(totalItens / itemsPorPagina);
+            
+            // Limpar paginação atual
+            paginacao.innerHTML = '';
+            
+            // Botão Anterior
+            const itemAnterior = document.createElement('li');
+            itemAnterior.className = `page-item ${paginaAtual === 1 ? 'disabled' : ''}`;
+            
+            const linkAnterior = document.createElement('a');
+            linkAnterior.className = 'page-link';
+            linkAnterior.href = '#';
+            linkAnterior.innerHTML = '&laquo;';
+            linkAnterior.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (paginaAtual > 1) {
+                    paginaAtual--;
+                    mostrarLinhas();
+                }
+            });
+            
+            itemAnterior.appendChild(linkAnterior);
+            paginacao.appendChild(itemAnterior);
+            
+            // Números das páginas
+            for (let i = 1; i <= totalPaginas; i++) {
+                const item = document.createElement('li');
+                item.className = `page-item ${i === paginaAtual ? 'active' : ''}`;
+                
+                const link = document.createElement('a');
+                link.className = 'page-link';
+                link.href = '#';
+                link.textContent = i;
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    paginaAtual = i;
+                    mostrarLinhas();
+                });
+                
+                item.appendChild(link);
+                paginacao.appendChild(item);
+            }
+            
+            // Botão Próximo
+            const itemProximo = document.createElement('li');
+            itemProximo.className = `page-item ${paginaAtual === totalPaginas || totalPaginas === 0 ? 'disabled' : ''}`;
+            
+            const linkProximo = document.createElement('a');
+            linkProximo.className = 'page-link';
+            linkProximo.href = '#';
+            linkProximo.innerHTML = '&raquo;';
+            linkProximo.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (paginaAtual < totalPaginas) {
+                    paginaAtual++;
+                    mostrarLinhas();
+                }
+            });
+            
+            itemProximo.appendChild(linkProximo);
+            paginacao.appendChild(itemProximo);
+        }
+        
+        // Event listener para busca
+        document.getElementById('searchFornecedor').addEventListener('input', function() {
+            termoBusca = this.value.toLowerCase();
+            paginaAtual = 1; // Resetar para a primeira página
+            mostrarLinhas();
+        });
+        
+        // Inicializar a exibição
+        mostrarLinhas();
+        
+        // Configurar botões de editar fornecedor
+        document.querySelectorAll('.editar-fornecedor').forEach(botao => {
+            botao.addEventListener('click', function() {
+                const modal = new bootstrap.Modal(document.getElementById('modalEditarFornecedor'));
+                
+                document.getElementById('editFornecedorId').value = this.dataset.id;
+                document.getElementById('editFornecedorNome').value = this.dataset.nome;
+                document.getElementById('editFornecedorCnpj').value = this.dataset.cnpj;
+                document.getElementById('editFornecedorContato').value = this.dataset.contato;
+                document.getElementById('editFornecedorEmail').value = this.dataset.email;
+                document.getElementById('editFornecedorTelefone').value = this.dataset.telefone;
+                document.getElementById('editFornecedorEndereco').value = this.dataset.endereco;
+                document.getElementById('editFornecedorAtivo').checked = this.dataset.ativo === 'True';
+                
+                modal.show();
+            });
+        });
+        
+        // Configurar botões de excluir fornecedor
+        document.querySelectorAll('.excluir-fornecedor').forEach(botao => {
+            botao.addEventListener('click', function() {
+                document.getElementById('deleteFornecedorId').value = this.dataset.id;
+                document.getElementById('deleteFornecedorNome').textContent = this.dataset.nome;
+                
+                const modal = new bootstrap.Modal(document.getElementById('modalExcluirFornecedor'));
+                modal.show();
+            });
+        });
+    });
+</script> 

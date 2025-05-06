@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block title %}Resultado do Cálculo - Controle de Estoque{% endblock %}
+
+{% block page_title %}Resultado do Cálculo{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('listar_producoes') }}" class="btn btn-secondary me-2">
+    <i class="fas fa-arrow-left me-1"></i>Voltar para Produções
+</a>
+<a href="{{ url_for('listar_produtos') }}" class="btn btn-primary">
+    <i class="fas fa-box me-1"></i>Ver Produtos
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Detalhes do Cálculo</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Produto:</strong> {{ produto.nome }}</p>
+                {% if produto.descricao %}
+                <p><strong>Descrição:</strong> {{ produto.descricao }}</p>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <p><strong>Quantidade:</strong> {{ quantidade }} unidade(s)</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-light">
+        <h5 class="mb-0">Componentes Necessários</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Componente</th>
+                        <th>Qtd. por Unidade</th>
+                        <th>Qtd. Total</th>
+                        <th>Estoque Atual</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for componente in componentes %}
+                    <tr>
+                        <td>{{ componente.codigo }}</td>
+                        <td>{{ componente.nome }}</td>
+                        <td>{{ componente.quantidade_unitaria }}</td>
+                        <td>{{ componente.quantidade_total }}</td>
+                        <td>{{ componente.estoque }}</td>
+                        <td>
+                            {% if componente.disponivel %}
+                            <span class="badge rounded-pill bg-success">Disponível</span>
+                            {% else %}
+                            <span class="badge rounded-pill bg-danger">Insuficiente</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Resumo -->
+        <div class="mt-4">
+            <h6>Resumo:</h6>
+{% set total_componentes = componentes|length %}
+{% set disponiveis = componentes|selectattr('disponivel', 'eq', True)|list|length %}
+{% set indisponiveis = total_componentes - disponiveis %}
+            
+            <div class="progress mb-3" style="height: 25px;">
+                {% if disponiveis == total_componentes %}
+                <div class="progress-bar bg-success" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
+                    Todos os componentes disponíveis
+                </div>
+                {% elif indisponiveis == total_componentes %}
+                <div class="progress-bar bg-danger" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
+                    Nenhum componente disponível
+                </div>
+                {% else %}
+                <div class="progress-bar bg-success" role="progressbar" style="width: {{ (disponiveis / total_componentes) * 100 }}%;" aria-valuenow="{{ (disponiveis / total_componentes) * 100 }}" aria-valuemin="0" aria-valuemax="100">
+                    {{ disponiveis }} disponíveis
+                </div>
+                <div class="progress-bar bg-danger" role="progressbar" style="width: {{ (indisponiveis / total_componentes) * 100 }}%;" aria-valuenow="{{ (indisponiveis / total_componentes) * 100 }}" aria-valuemin="0" aria-valuemax="100">
+                    {{ indisponiveis }} indisponíveis
+                </div>
+                {% endif %}
+            </div>
+            
+            {% if indisponiveis > 0 %}
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Atenção:</strong> Alguns componentes não possuem estoque suficiente para a quantidade solicitada.
+                Verifique os componentes com estoque insuficiente.
+            </div>
+            {% else %}
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle me-2"></i>
+                <strong>Tudo certo!</strong> Todos os componentes possuem estoque suficiente para a quantidade solicitada.
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Ações -->
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+            <a href="{{ url_for('listar_producoes') }}" class="btn btn-secondary me-md-2">
+                <i class="fas fa-list me-1"></i>Ver Produções
+            </a>
+            <form method="post" action="{{ url_for('registrar_saida_produto') }}">
+                <input type="hidden" name="produto_id" value="{{ produto.id }}">
+                <input type="hidden" name="quantidade" value="{{ quantidade }}">
+                <button type="submit" 
+                        class="btn btn-primary" 
+                        {% if indisponiveis > 0 %}disabled title="Componentes insuficientes: {{ indisponiveis }} item(s) faltante(s)"{% endif %}>
+                    <i class="fas fa-arrow-up me-1"></i>Registrar Saída
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

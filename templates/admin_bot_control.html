@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+
+{% block title %}Controle do Bot Telegram{% endblock %}
+
+{% block page_title %}<span style="font-weight: 700; color: #007bff;"><i class="fas fa-robot me-2"></i>Controle do Bot Telegram</span>{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('admin_painel') }}">Painel Admin</a></li>
+            <li class="breadcrumb-item active">Controle do Bot</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Painel de Status -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 text-primary"><i class="fas fa-info-circle me-2"></i>Status do Bot</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        {% if bot_running %}
+                        <div class="display-6 text-success mb-3">
+                            <i class="fas fa-circle-check fa-2x"></i>
+                        </div>
+                        <h3 class="text-success">ATIVO</h3>
+                        <p class="text-muted">O bot está em execução</p>
+                        {% else %}
+                        <div class="display-6 text-danger mb-3">
+                            <i class="fas fa-circle-xmark fa-2x"></i>
+                        </div>
+                        <h3 class="text-danger">INATIVO</h3>
+                        <p class="text-muted">O bot não está em execução</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <h6 class="mb-2">Configurações Atuais:</h6>
+                        <ul class="list-group">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Modo do Bot
+                                <span class="badge bg-primary">{{ bot_mode }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Chaves API
+                                {% if keys_configured %}
+                                <span class="badge bg-success">Configuradas</span>
+                                {% else %}
+                                <span class="badge bg-danger">Faltando</span>
+                                {% endif %}
+                            </li>
+                        </ul>
+                    </div>
+
+                    {% if not keys_configured %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-triangle-exclamation me-2"></i> <strong>Atenção!</strong> Configure as chaves API antes de iniciar o bot.
+                        <div class="mt-2">
+                            <a href="{{ url_for('admin_api_keys') }}" class="btn btn-sm btn-warning">
+                                <i class="fas fa-key me-1"></i> Configurar Chaves API
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Painel de Controle -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 text-primary"><i class="fas fa-sliders me-2"></i>Controles</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <form method="post" action="{{ url_for('admin_bot_control') }}">
+                                <input type="hidden" name="action" value="start">
+                                <button type="submit" class="btn btn-success w-100 py-3 {% if bot_running or not keys_configured %}disabled{% endif %}" 
+                                    {% if bot_running or not keys_configured %}disabled{% endif %}>
+                                    <i class="fas fa-play me-2"></i>
+                                    <span>Iniciar</span>
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <form method="post" action="{{ url_for('admin_bot_control') }}">
+                                <input type="hidden" name="action" value="stop">
+                                <button type="submit" class="btn btn-danger w-100 py-3 {% if not bot_running %}disabled{% endif %}" 
+                                    {% if not bot_running %}disabled{% endif %}>
+                                    <i class="fas fa-stop me-2"></i>
+                                    <span>Parar</span>
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <form method="post" action="{{ url_for('admin_bot_control') }}">
+                                <input type="hidden" name="action" value="restart">
+                                <button type="submit" class="btn btn-warning w-100 py-3 {% if not keys_configured %}disabled{% endif %}" 
+                                    {% if not keys_configured %}disabled{% endif %}>
+                                    <i class="fas fa-sync-alt me-2"></i>
+                                    <span>Reiniciar</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <h6 class="mb-2">Informações:</h6>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i> O bot deverá ser reiniciado sempre que forem alteradas as configurações das chaves API.
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <a href="{{ url_for('admin_api_keys') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-key me-1"></i> Gerenciar Chaves API
+                        </a>
+                        <a href="{{ url_for('admin_painel') }}" class="btn btn-outline-secondary ms-2">
+                            <i class="fas fa-arrow-left me-1"></i> Voltar para o Painel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Logs do Bot -->
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 text-primary"><i class="fas fa-list-alt me-2"></i>Instruções para VPS</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-light border">
+                        <h6>Manter o bot em execução em uma VPS</h6>
+                        <p>Para manter o bot em execução permanentemente em uma VPS, recomendamos usar o systemd:</p>
+                        
+                        <ol>
+                            <li>Crie um arquivo de serviço:</li>
+                        </ol>
+                        
+                        <div class="bg-dark text-light p-3 mb-3 rounded">
+                            <code>sudo nano /etc/systemd/system/telegram-bot.service</code>
+                        </div>
+                        
+                        <ol start="2">
+                            <li>Adicione o seguinte conteúdo (ajuste os caminhos conforme necessário):</li>
+                        </ol>
+                        
+                        <div class="bg-dark text-light p-3 mb-3 rounded">
+                            <pre><code>[Unit]
+Description=Telegram Bot para Sistema de Estoque
+After=network.target
+
+[Service]
+User=seu_usuario
+WorkingDirectory=/caminho/para/Estoque_Novo
+ExecStart=/caminho/para/python run_telegram_bot.py
+Restart=always
+RestartSec=10
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=telegram-bot
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+                        </div>
+                        
+                        <ol start="3">
+                            <li>Ative e inicie o serviço:</li>
+                        </ol>
+                        
+                        <div class="bg-dark text-light p-3 mb-3 rounded">
+                            <code>sudo systemctl daemon-reload<br>
+sudo systemctl enable telegram-bot.service<br>
+sudo systemctl start telegram-bot.service</code>
+                        </div>
+                        
+                        <ol start="4">
+                            <li>Para verificar o status:</li>
+                        </ol>
+                        
+                        <div class="bg-dark text-light p-3 rounded">
+                            <code>sudo systemctl status telegram-bot.service</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %} 

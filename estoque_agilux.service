@@ -1,0 +1,15 @@
+[Unit]
+Description=Estoque Agilux Web Application
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/Estoque_Agilux
+Environment="PATH=/var/www/Estoque_Agilux/venv/bin"
+Environment="FLASK_ENV=production"
+ExecStart=/var/www/Estoque_Agilux/venv/bin/gunicorn --workers 3 --bind 127.0.0.1:8000 app:app
+Restart=always
+
+[Install]
+WantedBy=multi-user.target 

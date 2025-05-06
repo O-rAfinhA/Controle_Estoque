@@ -1,0 +1,361 @@
+<!-- Início do conteúdo do relatório - Este arquivo é um fragmento que será incluído na página principal -->
+
+<!-- Métricas de resumo -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-value">25</div>
+            <div class="metric-label">Total de Fornecedores Avaliados</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-value">87%</div>
+            <div class="metric-label">Média de Aprovação</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-value">92%</div>
+            <div class="metric-label">Média de Pontualidade</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-value">3</div>
+            <div class="metric-label">Fornecedores Críticos</div>
+        </div>
+    </div>
+</div>
+
+<!-- Desempenho geral dos fornecedores -->
+<div class="card report-card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Desempenho Geral dos Fornecedores</h5>
+        <span class="text-muted small">Ordenado por pontuação final</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col" style="width: 5%"></th>
+                        <th scope="col" style="width: 25%">Fornecedor</th>
+                        <th scope="col" style="width: 10%">Recebimentos</th>
+                        <th scope="col" style="width: 15%">Aprovação</th>
+                        <th scope="col" style="width: 15%">Pontualidade</th>
+                        <th scope="col" style="width: 15%">Pontuação Final</th>
+                        <th scope="col" style="width: 15%">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Fornecedor 1 -->
+                    <tr class="clickable-row" data-toggle="collapse" data-target="#details1">
+                        <td class="text-center">
+                            <i class="fas fa-caret-right transition-icon"></i>
+                        </td>
+                        <td>Fornecedor ABC Ltda.</td>
+                        <td>42</td>
+                        <td>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: 95%;" aria-valuenow="95" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <span class="small">95%</span>
+                        </td>
+                        <td>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: 98%;" aria-valuenow="98" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <span class="small">98%</span>
+                        </td>
+                        <td>
+                            <strong class="performance-positive">96.5%</strong>
+                        </td>
+                        <td>
+                            <span class="badge badge-success">Excelente</span>
+                        </td>
+                    </tr>
+                    <tr class="collapse" id="details1">
+                        <td colspan="7" class="supplier-details">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <h6>Histórico de Desempenho</h6>
+                                    <canvas id="chart1" width="100%" height="150"></canvas>
+                                </div>
+                                <div class="col-md-4">
+                                    <h6>Detalhamento</h6>
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                            Itens recebidos
+                                            <span>425</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                            Itens aprovados
+                                            <span>404</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                            Entregas pontuais
+                                            <span>41/42</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-4">
+                                    <h6>Observações</h6>
+                                    <p class="text-muted small">Fornecedor com excelente histórico de qualidade e pontualidade. Mantém comunicação constante e rápida resolução de problemas quando necessário.</p>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <!-- Fornecedor 2 -->
+                    <tr class="clickable-row" data-toggle="collapse" data-target="#details2">
+                        <td class="text-center">
+                            <i class="fas fa-caret-right transition-icon"></i>
+                        </td>
+                        <td>Suprimentos XYZ S.A.</td>
+                        <td>38</td>
+                        <td>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: 92%;" aria-valuenow="92" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <span class="small">92%</span>
+                        </td>
+                        <td>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: 95%;" aria-valuenow="95" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <span class="small">95%</span>
+                        </td>
+                        <td>
+                            <strong class="performance-positive">93.5%</strong>
+                        </td>
+                        <td>
+                            <span class="badge badge-success">Excelente</span>
+                        </td>
+                    </tr>
+                    <tr class="collapse" id="details2">
+                        <td colspan="7" class="supplier-details">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <h6>Histórico de Desempenho</h6>
+                                    <canvas id="chart2" width="100%" height="150"></canvas>
+                                </div>
+                                <div class="col-md-4">
+                                    <h6>Detalhamento</h6>
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                            Itens recebidos
+                                            <span>312</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                            Itens aprovados
+                                            <span>287</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                            Entregas pontuais
+                                            <span>36/38</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-4">
+                                    <h6>Observações</h6>
+                                    <p class="text-muted small">Fornecedor com bom desempenho geral. Houve uma pequena redução na qualidade dos itens nos últimos meses, mas ainda dentro dos padrões aceitáveis.</p>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <!-- Fornecedor 3 (Com desempenho crítico) -->
+                    <tr class="clickable-row table-warning" data-toggle="collapse" data-target="#details3">
+                        <td class="text-center">
+                            <i class="fas fa-caret-right transition-icon"></i>
+                        </td>
+                        <td>Distribuidora Materiais Industriais</td>
+                        <td>22</td>
+                        <td>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar bg-warning" role="progressbar" style="width: 78%;" aria-valuenow="78" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <span class="small">78%</span>
+                        </td>
+                        <td>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar bg-danger" role="progressbar" style="width: 65%;" aria-valuenow="65" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <span class="small">65%</span>
+                        </td>
+                        <td>
+                            <strong class="performance-negative">71.5%</strong>
+                        </td>
+                        <td>
+                            <span class="badge badge-warning">Atenção</span>
+                        </td>
+                    </tr>
+                    <tr class="collapse" id="details3">
+                        <td colspan="7" class="supplier-details">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <h6>Histórico de Desempenho</h6>
+                                    <canvas id="chart3" width="100%" height="150"></canvas>
+                                </div>
+                                <div class="col-md-4">
+                                    <h6>Problemas Identificados</h6>
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item px-0">
+                                            <div class="d-flex w-100 justify-content-between">
+                                                <h6 class="mb-1">Qualidade Inconsistente</h6>
+                                                <span class="badge badge-warning">Recorrente</span>
+                                            </div>
+                                            <p class="mb-1 small">Variação significativa na qualidade dos materiais entregues.</p>
+                                        </li>
+                                        <li class="list-group-item px-0">
+                                            <div class="d-flex w-100 justify-content-between">
+                                                <h6 class="mb-1">Atrasos nas Entregas</h6>
+                                                <span class="badge badge-danger">Crítico</span>
+                                            </div>
+                                            <p class="mb-1 small">Entregas frequentemente atrasadas, impactando o planejamento de produção.</p>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-4">
+                                    <h6>Ações Recomendadas</h6>
+                                    <div class="card bg-light mb-3">
+                                        <div class="card-body p-3">
+                                            <h6 class="card-title">Plano de Ação Corretiva</h6>
+                                            <ol class="pl-3 mb-0 small">
+                                                <li>Agendar reunião com o fornecedor para discutir os problemas recorrentes</li>
+                                                <li>Estabelecer métricas claras de desempenho esperado</li>
+                                                <li>Definir prazo de 60 dias para melhoria nos indicadores</li>
+                                                <li>Considerar fornecedores alternativos caso não haja melhoria</li>
+                                            </ol>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <!-- Mais fornecedores seriam listados aqui -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Fornecedores críticos -->
+<div class="card report-card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Fornecedores com Desempenho Crítico</h5>
+        <span class="badge badge-danger">3 fornecedores</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col" style="width: 30%">Fornecedor</th>
+                        <th scope="col" style="width: 15%">Pontuação</th>
+                        <th scope="col" style="width: 25%">Problema Principal</th>
+                        <th scope="col" style="width: 15%">Tendência</th>
+                        <th scope="col" style="width: 15%">Status do Plano</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Distribuidora Materiais Industriais</td>
+                        <td><span class="badge badge-danger">71.5%</span></td>
+                        <td>Atrasos nas entregas</td>
+                        <td>
+                            <span class="text-danger">
+                                <i class="fas fa-arrow-down"></i> Em queda
+                            </span>
+                        </td>
+                        <td><span class="badge badge-warning">Em andamento</span></td>
+                    </tr>
+                    <tr>
+                        <td>Metalúrgica MZX Indústria</td>
+                        <td><span class="badge badge-danger">68.3%</span></td>
+                        <td>Qualidade dos materiais</td>
+                        <td>
+                            <span class="text-success">
+                                <i class="fas fa-arrow-up"></i> Melhorando
+                            </span>
+                        </td>
+                        <td><span class="badge badge-success">Ativo</span></td>
+                    </tr>
+                    <tr>
+                        <td>Soluções em Equipamentos Ltda.</td>
+                        <td><span class="badge badge-danger">65.7%</span></td>
+                        <td>Comunicação e suporte</td>
+                        <td>
+                            <span class="text-warning">
+                                <i class="fas fa-minus"></i> Estável
+                            </span>
+                        </td>
+                        <td><span class="badge badge-danger">Não iniciado</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Tendências de desempenho -->
+<div class="card report-card">
+    <div class="card-header">
+        <h5 class="mb-0">Tendências de Desempenho</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-8">
+                <canvas id="chart_tendencias" width="100%" height="300"></canvas>
+            </div>
+            <div class="col-md-4">
+                <h6>Análise de Tendências</h6>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item border-0 px-0">
+                        <div class="d-flex w-100 justify-content-between">
+                            <strong>Qualidade</strong>
+                            <span class="text-success"><i class="fas fa-arrow-up"></i> +2.3%</span>
+                        </div>
+                        <p class="mb-1 small text-muted">Melhoria gradual na qualidade média dos itens recebidos nos últimos 3 meses.</p>
+                    </li>
+                    <li class="list-group-item border-0 px-0">
+                        <div class="d-flex w-100 justify-content-between">
+                            <strong>Pontualidade</strong>
+                            <span class="text-warning"><i class="fas fa-minus"></i> +0.5%</span>
+                        </div>
+                        <p class="mb-1 small text-muted">Pontualidade praticamente estável, com leve melhoria.</p>
+                    </li>
+                    <li class="list-group-item border-0 px-0">
+                        <div class="d-flex w-100 justify-content-between">
+                            <strong>Resposta a Problemas</strong>
+                            <span class="text-success"><i class="fas fa-arrow-up"></i> +4.1%</span>
+                        </div>
+                        <p class="mb-1 small text-muted">Melhoria significativa no tempo de resposta a problemas reportados.</p>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts para os gráficos (seriam carregados na página principal) -->
+<script>
+// Código para simulação dos gráficos - seria implementado na página real
+/*
+document.addEventListener('DOMContentLoaded', function() {
+    // Simulação dos gráficos de desempenho
+    const chartElements = document.querySelectorAll('#chart1, #chart2, #chart3');
+    chartElements.forEach(canvas => {
+        const ctx = canvas.getContext('2d');
+        // Gráfico de linha para cada fornecedor...
+    });
+    
+    // Simulação do gráfico de tendências
+    const ctxTendencias = document.getElementById('chart_tendencias').getContext('2d');
+    // Gráfico de tendências...
+});
+*/
+</script>
+<!-- Final do conteúdo do relatório --> 

@@ -1,0 +1,15 @@
+[Unit]
+Description=Estoque Agilux Telegram Bot
+After=network.target estoque_agilux.service
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/Estoque_Agilux
+Environment="PATH=/var/www/Estoque_Agilux/venv/bin"
+ExecStart=/var/www/Estoque_Agilux/venv/bin/python run_telegram_bot.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target 

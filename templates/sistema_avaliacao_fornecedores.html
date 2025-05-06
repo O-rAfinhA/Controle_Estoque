@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+
+{% block title %}Sistema de Avaliação de Fornecedores{% endblock %}
+
+{% block page_title %}<span style="font-weight: 700; color: #007bff;"><i class="fas fa-clipboard-check me-2"></i>Sistema de Avaliação de Fornecedores</span>{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex">
+    <a href="{{ url_for('avaliacao_fornecedores') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-1"></i>Voltar
+    </a>
+</div>
+{% endblock %}
+
+{% block head_extras %}
+<style>
+    /* Estilos específicos para o sistema de avaliação */
+    .criterio-lista {
+        list-style-type: none;
+        padding-left: 0;
+    }
+    
+    .criterio-lista li {
+        margin-bottom: 0.5rem;
+        padding-left: 1.5rem;
+        position: relative;
+    }
+    
+    .criterio-lista li:before {
+        content: "✓";
+        position: absolute;
+        left: 0;
+        color: #1cc88a;
+    }
+    
+    .faixa-score {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 0.5rem;
+    }
+    
+    /* Estilos para cards com bordas coloridas à esquerda */
+    .border-left-primary {
+        border-left: 4px solid #4e73df !important;
+        }
+        
+    .border-left-success {
+        border-left: 4px solid #1cc88a !important;
+        }
+        
+    .border-left-info {
+        border-left: 4px solid #36b9cc !important;
+        }
+        
+    .border-left-warning {
+        border-left: 4px solid #f6c23e !important;
+        }
+        
+    .border-left-danger {
+        border-left: 4px solid #e74a3b !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card mt-4 mb-4">
+        <div class="card-body">
+            <!-- Seção de Introdução -->
+            <div class="alert alert-info mb-4">
+                <i class="fas fa-info-circle me-2"></i>
+                Esta página descreve em detalhes o sistema de avaliação de fornecedores utilizado pela empresa.
+            </div>
+            
+            <!-- Seção de Objetivo -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0" style="color: #007bff;"><i class="fas fa-bullseye me-2"></i>Objetivo do Sistema</h5>
+        </div>
+                <div class="card-body">
+        <p>O sistema de avaliação de fornecedores tem como objetivo principal monitorar e avaliar o desempenho dos fornecedores, permitindo:</p>
+        <ul>
+            <li>Identificar oportunidades de melhoria</li>
+            <li>Reconhecer fornecedores de alto desempenho</li>
+            <li>Tomar decisões baseadas em dados concretos</li>
+            <li>Estabelecer relacionamentos de longo prazo com fornecedores confiáveis</li>
+        </ul>
+                </div>
+    </div>
+    
+            <!-- Seção de Critérios -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0" style="color: #007bff;"><i class="fas fa-list-check me-2"></i>Critérios de Avaliação</h5>
+                </div>
+                <div class="card-body">
+        <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 border-left-primary shadow-sm">
+                                <div class="card-body">
+                                    <h6 class="card-title" style="color: #007bff;"><i class="fas fa-clock me-2"></i>Pontualidade</h6>
+                                    <p class="card-text">Avalia se as entregas foram realizadas dentro do prazo estabelecido.</p>
+                                    <ul class="criterio-lista">
+                            <li>Entrega dentro do prazo acordado</li>
+                            <li>Cumprimento de cronogramas</li>
+                            <li>Comunicação prévia em caso de atrasos</li>
+                        </ul>
+                        <p><strong>Cálculo:</strong> (Total de entregas no prazo / Total de entregas) × 100</p>
+                        <p><strong>Meta:</strong> 85%</p>
+                                    <div class="faixa-score">
+                                        <span class="badge bg-danger">Ruim &lt; 70%</span>
+                                        <span class="badge bg-warning text-dark">Regular 70-85%</span>
+                                        <span class="badge bg-success">Bom &gt; 85%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 border-left-success shadow-sm">
+                                <div class="card-body">
+                                    <h6 class="card-title" style="color: #007bff;"><i class="fas fa-check-circle me-2"></i>Qualidade</h6>
+                                    <p class="card-text">Avalia a conformidade dos produtos entregues com as especificações.</p>
+                                    <ul class="criterio-lista">
+                            <li>Conformidade com especificações técnicas</li>
+                            <li>Ausência de defeitos</li>
+                            <li>Documentação completa e correta</li>
+                        </ul>
+                        <p><strong>Cálculo:</strong> (Total de aprovações 100% / Total de recebimentos) × 100</p>
+                        <p><strong>Meta:</strong> 85%</p>
+                                    <div class="faixa-score">
+                                        <span class="badge bg-danger">Ruim &lt; 70%</span>
+                                        <span class="badge bg-warning text-dark">Regular 70-85%</span>
+                                        <span class="badge bg-success">Bom &gt; 85%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Seção de Score Final -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0" style="color: #007bff;"><i class="fas fa-trophy me-2"></i>Score Final</h5>
+        </div>
+                <div class="card-body">
+        <p>O score final é calculado como a média entre os scores de pontualidade e qualidade.</p>
+        <p><strong>Cálculo:</strong> (Pontualidade + Qualidade) / 2</p>
+        
+                    <div class="table-responsive mt-3">
+            <table class="table table-bordered">
+                <thead class="table-primary">
+                    <tr>
+                        <th>Faixa de Score</th>
+                        <th>Classificação</th>
+                        <th>Descrição</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                                    <td class="text-center">85-100%</td>
+                                    <td class="text-center text-success fw-bold">Ótimo</td>
+                        <td>Fornecedor de excelência. Priorizar para novas compras.</td>
+                    </tr>
+                    <tr>
+                                    <td class="text-center">70-84%</td>
+                                    <td class="text-center text-warning fw-bold">Regular</td>
+                                    <td>Fornecedor aceitável. Monitorar problemas recorrentes.</td>
+                    </tr>
+                    <tr>
+                                    <td class="text-center">0-69%</td>
+                                    <td class="text-center text-danger fw-bold">Crítico</td>
+                                    <td>Fornecedor com problemas. Revisar parceria e exigir plano de ação.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    </div>
+    
+            <!-- Seção Final - Decisões de Compra -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0" style="color: #007bff;"><i class="fas fa-shopping-cart me-2"></i>Impacto nas Decisões de Compra</h5>
+                </div>
+                <div class="card-body">
+                    <p>O resultado da avaliação de fornecedores deve ser considerado nas decisões de compra futuras:</p>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-left-success shadow-sm h-100">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title" style="color: #007bff;">Fornecedores Ótimos</h6>
+                                    <p class="card-text">Priorizar para compras futuras e desenvolver parcerias estratégicas.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-left-warning shadow-sm h-100">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title" style="color: #007bff;">Fornecedores Regulares</h6>
+                                    <p class="card-text">Solicitar melhorias específicas e reavaliar em 3 meses.</p>
+                    </div>
+                </div>
+            </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-left-danger shadow-sm h-100">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title" style="color: #007bff;">Fornecedores Críticos</h6>
+                                    <p class="card-text">Buscar alternativas e exigir plano de ação corretiva.</p>
+                    </div>
+                </div>
+            </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

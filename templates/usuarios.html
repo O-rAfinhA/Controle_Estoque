@@ -1,0 +1,217 @@
+<!-- Tab de Usuários -->
+<div class="tab-pane fade {% if tab_ativa == 'usuarios' %}show active{% endif %}" id="usuarios" role="tabpanel" aria-labelledby="usuarios-tab">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="fas fa-users me-2"></i>Usuários</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalUsuario">
+            <i class="fas fa-plus me-1"></i> Novo Usuário
+        </button>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <div class="input-group">
+                <input type="text" class="form-control" id="searchUsuario" placeholder="Buscar usuário...">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="tabelaUsuarios">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nome</th>
+                            <th>Email</th>
+                            <th>Perfil</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for usuario in usuarios %}
+                        <tr>
+                            <td>{{ usuario.nome }}</td>
+                            <td>{{ usuario.email }}</td>
+                            <td>{{ usuario.perfil }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if usuario.ativo else 'secondary' }}">
+                                    {{ 'Ativo' if usuario.ativo else 'Inativo' }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-primary editar-usuario" 
+                                            data-id="{{ usuario.id }}" 
+                                            data-nome="{{ usuario.nome }}" 
+                                            data-email="{{ usuario.email }}"
+                                            data-perfil="{{ usuario.perfil }}"
+                                            data-ativo="{{ usuario.ativo }}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger excluir-usuario" 
+                                            data-id="{{ usuario.id }}" 
+                                            data-nome="{{ usuario.nome }}">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-light">
+            <nav aria-label="Navegação de páginas">
+                <ul class="pagination justify-content-center mb-0" id="paginacaoUsuarios">
+                    <!-- Paginação será preenchida via JavaScript -->
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- Adicionar o JavaScript para implementar a paginação ao final do arquivo -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Configuração da paginação
+        const itemsPorPagina = 10;
+        let paginaAtual = 1;
+        const tabela = document.getElementById('tabelaUsuarios');
+        const linhas = tabela.querySelectorAll('tbody tr');
+        const paginacao = document.getElementById('paginacaoUsuarios');
+        let termoBusca = '';
+        
+        // Função para mostrar as linhas da página atual
+        function mostrarLinhas() {
+            // Ocultar todas as linhas
+            linhas.forEach(linha => {
+                linha.style.display = 'none';
+            });
+            
+            // Filtrar linhas com base no termo de busca
+            const linhasVisiveis = [...linhas].filter(linha => {
+                if (termoBusca === '') return true;
+                
+                const nome = linha.cells[0].textContent.toLowerCase();
+                const email = linha.cells[1].textContent.toLowerCase();
+                const perfil = linha.cells[2].textContent.toLowerCase();
+                
+                return nome.includes(termoBusca) || 
+                       email.includes(termoBusca) || 
+                       perfil.includes(termoBusca);
+            });
+            
+            // Calcular índices das linhas a serem exibidas
+            const inicio = (paginaAtual - 1) * itemsPorPagina;
+            const fim = inicio + itemsPorPagina;
+            
+            // Mostrar apenas as linhas da página atual
+            linhasVisiveis.slice(inicio, fim).forEach(linha => {
+                linha.style.display = '';
+            });
+            
+            // Atualizar a paginação
+            atualizarPaginacao(linhasVisiveis.length);
+        }
+        
+        // Função para atualizar os controles de paginação
+        function atualizarPaginacao(totalItens) {
+            const totalPaginas = Math.ceil(totalItens / itemsPorPagina);
+            
+            // Limpar paginação atual
+            paginacao.innerHTML = '';
+            
+            // Botão Anterior
+            const itemAnterior = document.createElement('li');
+            itemAnterior.className = `page-item ${paginaAtual === 1 ? 'disabled' : ''}`;
+            
+            const linkAnterior = document.createElement('a');
+            linkAnterior.className = 'page-link';
+            linkAnterior.href = '#';
+            linkAnterior.innerHTML = '&laquo;';
+            linkAnterior.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (paginaAtual > 1) {
+                    paginaAtual--;
+                    mostrarLinhas();
+                }
+            });
+            
+            itemAnterior.appendChild(linkAnterior);
+            paginacao.appendChild(itemAnterior);
+            
+            // Números das páginas
+            for (let i = 1; i <= totalPaginas; i++) {
+                const item = document.createElement('li');
+                item.className = `page-item ${i === paginaAtual ? 'active' : ''}`;
+                
+                const link = document.createElement('a');
+                link.className = 'page-link';
+                link.href = '#';
+                link.textContent = i;
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    paginaAtual = i;
+                    mostrarLinhas();
+                });
+                
+                item.appendChild(link);
+                paginacao.appendChild(item);
+            }
+            
+            // Botão Próximo
+            const itemProximo = document.createElement('li');
+            itemProximo.className = `page-item ${paginaAtual === totalPaginas || totalPaginas === 0 ? 'disabled' : ''}`;
+            
+            const linkProximo = document.createElement('a');
+            linkProximo.className = 'page-link';
+            linkProximo.href = '#';
+            linkProximo.innerHTML = '&raquo;';
+            linkProximo.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (paginaAtual < totalPaginas) {
+                    paginaAtual++;
+                    mostrarLinhas();
+                }
+            });
+            
+            itemProximo.appendChild(linkProximo);
+            paginacao.appendChild(itemProximo);
+        }
+        
+        // Event listener para busca
+        document.getElementById('searchUsuario').addEventListener('input', function() {
+            termoBusca = this.value.toLowerCase();
+            paginaAtual = 1; // Resetar para a primeira página
+            mostrarLinhas();
+        });
+        
+        // Inicializar a exibição
+        mostrarLinhas();
+        
+        // Configurar botões de editar usuário
+        document.querySelectorAll('.editar-usuario').forEach(botao => {
+            botao.addEventListener('click', function() {
+                document.getElementById('editUsuarioId').value = this.dataset.id;
+                document.getElementById('editUsuarioNome').value = this.dataset.nome;
+                document.getElementById('editUsuarioEmail').value = this.dataset.email;
+                document.getElementById('editUsuarioPerfil').value = this.dataset.perfil;
+                document.getElementById('editUsuarioAtivo').checked = this.dataset.ativo === 'True';
+                
+                const modal = new bootstrap.Modal(document.getElementById('modalEditarUsuario'));
+                modal.show();
+            });
+        });
+        
+        // Configurar botões de excluir usuário
+        document.querySelectorAll('.excluir-usuario').forEach(botao => {
+            botao.addEventListener('click', function() {
+                document.getElementById('deleteUsuarioId').value = this.dataset.id;
+                document.getElementById('deleteUsuarioNome').textContent = this.dataset.nome;
+                
+                const modal = new bootstrap.Modal(document.getElementById('modalExcluirUsuario'));
+                modal.show();
+            });
+        });
+    });
+</script> 

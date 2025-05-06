@@ -1,0 +1,302 @@
+{% extends 'base.html' %}
+
+{% block title %}Histórico de Transações - Controle de Estoque{% endblock %}
+
+{% block page_title %}<span style="font-weight: 700; color: #007bff;"><i class="fa fa-refresh me-2"></i>Histórico de Movimentações e Produções</span>{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('listar_componentes') }}" class="btn btn-secondary">
+    <i class="fa fa-arrow-left me-1"></i>Voltar
+</a>
+{% endblock %}
+
+{% block head_extras %}
+<style>
+    /* Estilos para a tabela de transações */
+    #tabelaTransacoes {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    
+    #tabelaTransacoes thead th {
+        font-weight: 600;
+        padding: 12px 15px;
+        border-bottom: 2px solid #dee2e6;
+        background-color: #f8f9fa;
+        color: #495057;
+        vertical-align: middle;
+    }
+    
+    #tabelaTransacoes tbody td {
+        padding: 12px 15px;
+        vertical-align: middle;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    #tabelaTransacoes tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.05);
+    }
+    
+    /* Estilos para os badges */
+    .badge.bg-success {
+        padding: 6px 10px;
+        font-weight: 500;
+        font-size: 0.85rem;
+    }
+    
+    .badge.bg-danger {
+        padding: 6px 10px;
+        font-weight: 500;
+        font-size: 0.85rem;
+    }
+    
+    /* Para quantidades */
+    .quantidade-cell {
+        font-weight: 600;
+        text-align: center;
+    }
+    
+    /* Link para componente */
+    .componente-link {
+        color: #007bff;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .componente-link:hover {
+        text-decoration: underline;
+        color: #0056b3;
+    }
+    
+    /* Codigo do componente */
+    .codigo-componente {
+        display: block;
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin-top: 3px;
+    }
+    
+    /* Formatação da data */
+    .data-formatada {
+        font-size: 0.9rem;
+    }
+    
+    /* Divisores mais suaves */
+    .border-light {
+        border-color: #e9ecef !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="alert alert-info mb-4">
+    <i class="fa fa-info-circle me-2"></i>
+    <strong>Nota:</strong> Esta página mostra apenas as movimentações realizadas através das funções 
+    "Registrar Entrada" e "Registrar Saída", bem como as saídas realizadas durante o processo de produção.
+    Alterações feitas durante a edição de componentes ou outras operações não são exibidas aqui.
+</div>
+
+<div class="table-container">
+    {% if transacoes %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 text-primary"><i class="fa fa-history me-2"></i>Histórico de Transações</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="tabelaTransacoes">
+                    <thead>
+                        <tr>
+                            <th width="35%">COMPONENTE</th>
+                            <th class="text-center" width="15%">TIPO</th>
+                            <th class="text-center" width="15%">QUANTIDADE</th>
+                            <th width="20%">DATA/HORA</th>
+                            <th width="15%">USUÁRIO</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for transacao in transacoes %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('editar_componente', codigo=transacao.codigo_componente) }}" class="componente-link">
+                                    {{ transacao.nome }}
+                                </a>
+                                <span class="codigo-componente">Cód: {{ transacao.codigo_componente }}</span>
+                            </td>
+                            <td class="text-center">
+                                {% if transacao.tipo == 'entrada' %}
+                                <span class="badge bg-success rounded-pill"><i class="fa fa-arrow-down me-1"></i>Entrada</span>
+                                {% else %}
+                                <span class="badge bg-danger rounded-pill"><i class="fa fa-arrow-up me-1"></i>Saída</span>
+                                {% endif %}
+                            </td>
+                            <td class="quantidade-cell">
+                                {{ transacao.quantidade }}
+                            </td>
+                            <td class="data-formatada">
+                                {% if transacao.data_formatada is defined %}
+                                    {{ transacao.data_formatada }}
+                                {% else %}
+                                    {{ transacao.data|formatdatetime }}
+                                {% endif %}
+                            </td>
+                            <td>{{ transacao.usuario_nome if transacao.usuario_nome else 'N/A' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-white py-2">
+            <nav aria-label="Navegação de páginas">
+                <ul class="pagination pagination-sm justify-content-center mb-0" id="paginacaoTransacoes">
+                    <!-- Paginação será preenchida via JavaScript -->
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        Nenhuma movimentação registrada ainda.
+    </div>
+    {% endif %}
+</div>
+
+<!-- Ações Rápidas -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 text-primary">Ações Rápidas</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <a href="{{ url_for('registrar_entrada') }}" class="btn btn-success w-100 py-2">
+                            <i class="fa fa-arrow-down me-2"></i>Registrar Entrada
+                        </a>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <a href="{{ url_for('registrar_saida') }}" class="btn btn-danger w-100 py-2">
+                            <i class="fa fa-arrow-up me-2"></i>Registrar Saída
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript para implementar a paginação -->
+{% if transacoes %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Configuração da paginação - forçar 10 itens por página
+        const itemsPorPagina = 10;
+        let paginaAtual = 1;
+        const tabela = document.getElementById('tabelaTransacoes');
+        const linhas = tabela.querySelectorAll('tbody tr');
+        const paginacao = document.getElementById('paginacaoTransacoes');
+        
+        // Função para mostrar as linhas da página atual
+        function mostrarLinhas() {
+            // Ocultar todas as linhas primeiro
+            linhas.forEach(linha => {
+                linha.style.display = 'none';
+            });
+            
+            // Calcular índices das linhas a serem exibidas
+            const inicio = (paginaAtual - 1) * itemsPorPagina;
+            const fim = Math.min(inicio + itemsPorPagina, linhas.length);
+            
+            // Mostrar apenas as linhas da página atual
+            for (let i = inicio; i < fim; i++) {
+                if (i < linhas.length) {
+                    linhas[i].style.display = '';
+                }
+            }
+            
+            // Atualizar a paginação
+            atualizarPaginacao(linhas.length);
+        }
+        
+        // Função para atualizar os controles de paginação
+        function atualizarPaginacao(totalItens) {
+            const totalPaginas = Math.ceil(totalItens / itemsPorPagina);
+            
+            // Limpar paginação atual
+            paginacao.innerHTML = '';
+            
+            // Não mostrar paginação se tiver apenas uma página
+            if (totalPaginas <= 1) {
+                return;
+            }
+            
+            // Botão Anterior
+            const itemAnterior = document.createElement('li');
+            itemAnterior.className = `page-item ${paginaAtual === 1 ? 'disabled' : ''}`;
+            
+            const linkAnterior = document.createElement('a');
+            linkAnterior.className = 'page-link';
+            linkAnterior.href = '#';
+            linkAnterior.setAttribute('aria-label', 'Anterior');
+            linkAnterior.innerHTML = '&laquo;';
+            linkAnterior.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (paginaAtual > 1) {
+                    paginaAtual--;
+                    mostrarLinhas();
+                }
+            });
+            
+            itemAnterior.appendChild(linkAnterior);
+            paginacao.appendChild(itemAnterior);
+            
+            // Números das páginas
+            for (let i = 1; i <= totalPaginas; i++) {
+                const item = document.createElement('li');
+                item.className = `page-item ${i === paginaAtual ? 'active' : ''}`;
+                
+                const link = document.createElement('a');
+                link.className = 'page-link';
+                link.href = '#';
+                link.textContent = i;
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    paginaAtual = i;
+                    mostrarLinhas();
+                });
+                
+                item.appendChild(link);
+                paginacao.appendChild(item);
+            }
+            
+            // Botão Próximo
+            const itemProximo = document.createElement('li');
+            itemProximo.className = `page-item ${paginaAtual === totalPaginas ? 'disabled' : ''}`;
+            
+            const linkProximo = document.createElement('a');
+            linkProximo.className = 'page-link';
+            linkProximo.href = '#';
+            linkProximo.setAttribute('aria-label', 'Próximo');
+            linkProximo.innerHTML = '&raquo;';
+            linkProximo.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (paginaAtual < totalPaginas) {
+                    paginaAtual++;
+                    mostrarLinhas();
+                }
+            });
+            
+            itemProximo.appendChild(linkProximo);
+            paginacao.appendChild(itemProximo);
+        }
+        
+        // Inicializar a paginação imediatamente após carregar o DOM
+        setTimeout(function() {
+            mostrarLinhas();
+        }, 100);
+    });
+</script>
+{% endif %}
+{% endblock %}

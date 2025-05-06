@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Painel de Administrador{% endblock %}
+
+{% block page_title %}<span style="font-weight: 700; color: #007bff;"><i class="fas fa-user-shield me-2"></i>Painel de Administrador</span>{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0" style="color: #007bff;"><i class="fas fa-cogs me-2"></i>Opções de Administrador</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <a href="{{ url_for('admin_usuarios_pendentes') }}" class="btn btn-primary d-block py-2">
+                        <i class="bi bi-person-plus"></i> Aprovar Usuários
+                    </a>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <a href="{{ url_for('admin_solicitacoes_senha') }}" class="btn btn-warning d-block py-2">
+                        <i class="bi bi-key"></i> Solicitações de Senha
+                    </a>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <a href="{{ url_for('admin_api_keys') }}" class="btn btn-info d-block py-2">
+                        <i class="bi bi-key-fill"></i> Gerenciar Chaves API
+                    </a>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <a href="{{ url_for('admin_bot_control') }}" class="btn btn-success d-block py-2">
+                        <i class="bi bi-robot"></i> Controle do Bot
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0" style="color: #007bff;"><i class="fas fa-users me-2"></i>Lista de Usuários</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nome</th>
+                            <th>Status</th>
+                            <th>Admin</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for usuario in usuarios %}
+                        <tr>
+                            <td>{{ usuario.id }}</td>
+                            <td>{{ usuario.nome }}</td>
+                            <td>
+                                {% if usuario.status == 'aprovado' %}
+                                <span class="badge bg-success">Aprovado</span>
+                                {% elif usuario.status == 'pendente' %}
+                                <span class="badge bg-warning">Pendente</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ usuario.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if usuario.admin %}
+                                <span class="badge bg-primary">Sim</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Não</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Fornecedor{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Editar Fornecedor</h1>
+    
+    <div class="card">
+        <div class="card-body">
+            <form id="fornecedorForm" method="post" action="{{ url_for('editar_fornecedor', id=fornecedor.id) }}">
+                <div class="row">
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <label for="nomeFornecedor" class="form-label">Nome do Fornecedor</label>
+                        <input type="text" class="form-control" id="nomeFornecedor" name="nome" value="{{ fornecedor.nome }}" required>
+                    </div>
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <label for="cnpjFornecedor" class="form-label">CNPJ</label>
+                        <input type="text" class="form-control" id="cnpjFornecedor" name="cnpj" placeholder="XX.XXX.XXX/XXXX-XX" maxlength="18" oninput="formatarCNPJ(this)" onblur="validarCNPJ(this)" required minlength="18" value="{{ fornecedor.cnpj }}">
+                    </div>
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <label for="emailFornecedor" class="form-label">E-mail</label>
+                        <input type="email" class="form-control" id="emailFornecedor" name="email" value="{{ fornecedor.email }}">
+                    </div>
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <label for="telefoneFornecedor" class="form-label">Telefone</label>
+                        <input type="text" class="form-control" id="telefoneFornecedor" name="telefone" placeholder="(XX) XXXXX-XXXX" maxlength="15" oninput="formatarTelefone(this)" value="{{ fornecedor.telefone }}">
+                    </div>
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                    <a href="{{ url_for('avaliacao_fornecedores', tab='fornecedores') }}" class="btn btn-outline-secondary">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Função para formatar CNPJ
+    function formatarCNPJ(input) {
+        let valor = input.value.replace(/\D/g, '');
+        if (valor.length > 14) valor = valor.slice(0, 14);
+        
+        valor = valor.replace(/^(\d{2})(\d)/, '$1.$2');
+        valor = valor.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+        valor = valor.replace(/\.(\d{3})(\d)/, '.$1/$2');
+        valor = valor.replace(/(\d{4})(\d)/, '$1-$2');
+        
+        input.value = valor;
+    }
+
+    // Função para validar CNPJ
+    function validarCNPJ(input) {
+        const cnpj = input.value.replace(/\D/g, '');
+        
+        if (!cnpj || cnpj.length === 0) {
+            input.setCustomValidity('CNPJ é obrigatório!');
+            return false;
+        }
+        
+        if (cnpj.length !== 14) {
+            input.setCustomValidity('CNPJ deve ter 14 dígitos!');
+            return false;
+        }
+        
+        // Elimina CNPJs invalidos conhecidos
+        if (/^(\d)\1{13}$/.test(cnpj)) {
+            input.setCustomValidity('CNPJ inválido!');
+            return false;
+        }
+        
+        // Valida DVs
+        let tamanho = cnpj.length - 2;
+        let numeros = cnpj.substring(0, tamanho);
+        let digitos = cnpj.substring(tamanho);
+        let soma = 0;
+        let pos = tamanho - 7;
+        
+        for (let i = tamanho; i >= 1; i--) {
+            soma += numeros.charAt(tamanho - i) * pos--;
+            if (pos < 2) pos = 9;
+        }
+        
+        let resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
+        if (resultado != digitos.charAt(0)) {
+            input.setCustomValidity('CNPJ inválido!');
+            return false;
+        }
+        
+        tamanho = tamanho + 1;
+        numeros = cnpj.substring(0, tamanho);
+        soma = 0;
+        pos = tamanho - 7;
+        
+        for (let i = tamanho; i >= 1; i--) {
+            soma += numeros.charAt(tamanho - i) * pos--;
+            if (pos < 2) pos = 9;
+        }
+        
+        resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
+        if (resultado != digitos.charAt(1)) {
+            input.setCustomValidity('CNPJ inválido!');
+            return false;
+        }
+        
+        input.setCustomValidity('');
+        return true;
+    }
+
+    // Função para formatar telefone
+    function formatarTelefone(input) {
+        let valor = input.value.replace(/\D/g, '');
+        if (valor.length > 11) valor = valor.slice(0, 11);
+        
+        if (valor.length > 10) {
+            valor = valor.replace(/^(\d{2})(\d{5})(\d{4}).*/, '($1) $2-$3');
+        } else if (valor.length > 9) {
+            valor = valor.replace(/^(\d{2})(\d{4})(\d{4}).*/, '($1) $2-$3');
+        } else if (valor.length > 5) {
+            valor = valor.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, '($1) $2-$3');
+        } else if (valor.length > 2) {
+            valor = valor.replace(/^(\d{2})(\d{0,5})/, '($1) $2');
+        } else {
+            valor = valor.replace(/^(\d*)/, '($1');
+        }
+        
+        input.value = valor;
+    }
+    
+    // Inicializar, formatando campos se necessário
+    document.addEventListener('DOMContentLoaded', function() {
+        const cnpjInput = document.getElementById('cnpjFornecedor');
+        const telefoneInput = document.getElementById('telefoneFornecedor');
+        
+        // Aplicar formatação aos campos existentes
+        formatarCNPJ(cnpjInput);
+        formatarTelefone(telefoneInput);
+        
+        // Ajusta layout para dispositivos móveis
+        function adjustForMobile() {
+            const viewportWidth = window.innerWidth;
+            const buttons = document.querySelector('.d-flex.gap-2');
+            
+            if (viewportWidth < 576) {
+                buttons.classList.remove('d-flex');
+                buttons.classList.add('d-grid', 'gap-2');
+            } else {
+                buttons.classList.add('d-flex');
+                buttons.classList.remove('d-grid', 'gap-2');
+            }
+        }
+        
+        // Executar ajuste inicial
+        adjustForMobile();
+        
+        // Adicionar evento para quando a janela for redimensionada
+        window.addEventListener('resize', adjustForMobile);
+    });
+</script>
+{% endblock %} 

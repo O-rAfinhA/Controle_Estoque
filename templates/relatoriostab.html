@@ -1,0 +1,19 @@
+<!-- Código para substituir na navegação da aba de Relatórios -->
+
+Substitua:
+<a href="{{ url_for('relatorios_fornecedores') }}" class="nav-link {% if tab_ativa == 'relatorios' %}active{% endif %}" id="relatorios-tab">Relatórios</a>
+
+Por:
+<button class="nav-link {% if tab_ativa == 'relatorios' %}active{% endif %}" id="relatorios-tab" data-bs-toggle="tab" data-bs-target="#relatorios" type="button" role="tab" aria-controls="relatorios" aria-selected="{% if tab_ativa == 'relatorios' %}true{% else %}false{% endif %}">Relatórios</button>
+
+<!-- Adicione este script ao arquivo -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const relatoriostab = document.getElementById('relatorios-tab');
+    if (relatoriostab) {
+        relatoriostab.addEventListener('click', function() {
+            window.location.href = "{{ url_for('relatorios_fornecedores') }}";
+        });
+    }
+});
+</script> 

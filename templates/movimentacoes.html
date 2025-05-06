@@ -1,0 +1,290 @@
+<!-- Tab de Movimentações -->
+<div class="tab-pane fade {% if tab_ativa == 'movimentacoes' %}show active{% endif %}" id="movimentacoes" role="tabpanel" aria-labelledby="movimentacoes-tab">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="fas fa-exchange-alt me-2"></i>Movimentações</h2>
+        <div>
+            <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#modalEntrada">
+                <i class="fas fa-arrow-down me-1"></i> Nova Entrada
+            </button>
+            <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalSaida">
+                <i class="fas fa-arrow-up me-1"></i> Nova Saída
+            </button>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <div class="row align-items-center">
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="searchMovimentacao" placeholder="Buscar por produto, data...">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    </div>
+                </div>
+                <div class="col-md-7 d-flex justify-content-md-end mt-3 mt-md-0">
+                    <div class="btn-group">
+                        <button class="btn btn-outline-primary active" id="btnTodasMovimentacoes">Todas</button>
+                        <button class="btn btn-outline-success" id="btnEntradas">Entradas</button>
+                        <button class="btn btn-outline-danger" id="btnSaidas">Saídas</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div>
+                <table class="table table-hover align-middle mb-0" id="tabelaMovimentacoes">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Data</th>
+                            <th>Tipo</th>
+                            <th>Produto</th>
+                            <th>Quantidade</th>
+                            <th>Responsável</th>
+                            <th>Observação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mov in movimentacoes %}
+                        <tr data-tipo="{{ mov.tipo }}">
+                            <td>{{ mov.data }}</td>
+                            <td>
+                                {% if mov.tipo == 'entrada' %}
+                                <span class="badge bg-success"><i class="fas fa-arrow-down me-1"></i>Entrada</span>
+                                {% else %}
+                                <span class="badge bg-danger"><i class="fas fa-arrow-up me-1"></i>Saída</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ mov.produto_nome }}</td>
+                            <td>{{ mov.quantidade }} {{ mov.unidade }}</td>
+                            <td>{{ mov.responsavel }}</td>
+                            <td>
+                                {% if mov.observacao %}
+                                <button class="btn btn-sm btn-outline-secondary" title="{{ mov.observacao }}"
+                                    data-bs-toggle="tooltip" data-bs-placement="top">
+                                    <i class="fas fa-info-circle"></i>
+                                </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-light">
+            <nav aria-label="Navegação de páginas">
+                <ul class="pagination justify-content-center mb-0" id="paginacaoMovimentacoes">
+                    <!-- Paginação será preenchida via JavaScript -->
+                </ul>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Controles de paginação -->
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <div>
+            <span id="paginationInfo" class="text-muted small">Exibindo 1-10 de 0 itens</span>
+        </div>
+        <div>
+            <button id="btnPrimeiro" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-chevron-double-left"></i>
+            </button>
+            <button id="btnAnterior" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+            <span id="paginaAtual" class="mx-2">1</span>
+            <button id="btnProximo" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-chevron-right"></i>
+            </button>
+            <button id="btnUltimo" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-chevron-double-right"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Estilos para remover barras de rolagem -->
+<style>
+    /* Remove qualquer barra de rolagem da tabela de movimentações */
+    div.table-responsive,
+    div:has(> #tabelaMovimentacoes) {
+        overflow: visible !important;
+        max-height: none !important;
+        height: auto !important;
+    }
+    
+    #tabelaMovimentacoes {
+        overflow: visible !important;
+    }
+    
+    /* Garante que o tbody não cause rolagem */
+    #tabelaMovimentacoes tbody {
+        overflow: visible !important;
+        max-height: none !important;
+    }
+</style>
+
+<!-- Adicionar o JavaScript para implementar a paginação ao final do arquivo -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Configuração da paginação - forçar 10 itens por página
+        const itemsPorPagina = 10;
+        let paginaAtual = 1;
+        let totalPaginas = 1;
+        const tabela = document.getElementById('tabelaMovimentacoes');
+        const linhas = tabela.querySelectorAll('tbody tr');
+        const paginacao = document.getElementById('paginacaoMovimentacoes');
+        
+        // Função para mostrar as linhas da página atual
+        function mostrarLinhas() {
+            // Obter o filtro de tipo ativo
+            let tipoFiltro = '';
+            if (document.getElementById('btnTodasMovimentacoes').classList.contains('active')) {
+                tipoFiltro = 'todos';
+            } else if (document.getElementById('btnEntradas').classList.contains('active')) {
+                tipoFiltro = 'entrada';
+            } else if (document.getElementById('btnSaidas').classList.contains('active')) {
+                tipoFiltro = 'saida';
+            } else {
+                tipoFiltro = 'todos'; // Padrão
+            }
+            
+            // Resetar visibilidade
+            linhas.forEach(linha => {
+                linha.style.display = 'none';
+            });
+            
+            // Filtrar linhas que correspondem à busca e ao tipo
+            const linhasFiltradas = Array.from(linhas).filter(linha => {
+                const matchBusca = linha.dataset.searchMatch === 'true' || !linha.dataset.searchMatch;
+                
+                if (tipoFiltro === 'todos') {
+                    return matchBusca;
+                } else {
+                    return matchBusca && (linha.dataset.tipo === tipoFiltro);
+                }
+            });
+            
+            // Calcular o total de páginas
+            totalPaginas = Math.ceil(linhasFiltradas.length / itemsPorPagina);
+            
+            // Garantir que a página atual é válida
+            if (paginaAtual > totalPaginas) {
+                paginaAtual = totalPaginas || 1;
+            }
+            
+            // Exibir linhas da página atual
+            const inicio = (paginaAtual - 1) * itemsPorPagina;
+            const fim = Math.min(inicio + itemsPorPagina, linhasFiltradas.length);
+            
+            for (let i = inicio; i < fim; i++) {
+                linhasFiltradas[i].style.display = '';
+            }
+            
+            // Atualizar controles de paginação
+            document.getElementById('paginaAtual').textContent = paginaAtual;
+            document.getElementById('btnAnterior').disabled = paginaAtual === 1;
+            document.getElementById('btnPrimeiro').disabled = paginaAtual === 1;
+            document.getElementById('btnProximo').disabled = paginaAtual === totalPaginas || totalPaginas === 0;
+            document.getElementById('btnUltimo').disabled = paginaAtual === totalPaginas || totalPaginas === 0;
+            
+            // Atualizar informações de paginação
+            const textoInfo = linhasFiltradas.length > 0 
+                ? `Exibindo ${inicio + 1}-${fim} de ${linhasFiltradas.length} itens`
+                : "Nenhum item encontrado";
+            document.getElementById('paginationInfo').textContent = textoInfo;
+        }
+        
+        // Inicializar o atributo de busca para todas as linhas
+        linhas.forEach(linha => {
+            linha.dataset.searchMatch = 'true';
+        });
+        
+        // Implementar filtros de tipo
+        document.getElementById('btnTodasMovimentacoes').addEventListener('click', function() {
+            paginaAtual = 1;
+            this.classList.add('active');
+            document.getElementById('btnEntradas').classList.remove('active');
+            document.getElementById('btnSaidas').classList.remove('active');
+            mostrarLinhas();
+        });
+        
+        document.getElementById('btnEntradas').addEventListener('click', function() {
+            paginaAtual = 1;
+            this.classList.add('active');
+            document.getElementById('btnTodasMovimentacoes').classList.remove('active');
+            document.getElementById('btnSaidas').classList.remove('active');
+            mostrarLinhas();
+        });
+        
+        document.getElementById('btnSaidas').addEventListener('click', function() {
+            paginaAtual = 1;
+            this.classList.add('active');
+            document.getElementById('btnTodasMovimentacoes').classList.remove('active');
+            document.getElementById('btnEntradas').classList.remove('active');
+            mostrarLinhas();
+        });
+        
+        // Implementar busca
+        document.getElementById('searchMovimentacao').addEventListener('input', function() {
+            const termo = this.value.toLowerCase();
+            
+            linhas.forEach(linha => {
+                const data = linha.cells[0].textContent.toLowerCase();
+                const tipo = linha.cells[1].textContent.toLowerCase();
+                const produto = linha.cells[2].textContent.toLowerCase();
+                const quantidade = linha.cells[3].textContent.toLowerCase();
+                const responsavel = linha.cells[4].textContent.toLowerCase();
+                const observacao = linha.cells[5].textContent.toLowerCase();
+                
+                if (data.includes(termo) || tipo.includes(termo) || produto.includes(termo) || 
+                    quantidade.includes(termo) || responsavel.includes(termo) || observacao.includes(termo)) {
+                    linha.dataset.searchMatch = 'true';
+                } else {
+                    linha.dataset.searchMatch = 'false';
+                }
+            });
+            
+            paginaAtual = 1;
+            mostrarLinhas();
+        });
+        
+        // Inicializar tooltips do Bootstrap
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        
+        // Configurar eventos de paginação
+        document.getElementById('btnPrimeiro').addEventListener('click', function() {
+            if (paginaAtual !== 1) {
+                paginaAtual = 1;
+                mostrarLinhas();
+            }
+        });
+        
+        document.getElementById('btnAnterior').addEventListener('click', function() {
+            if (paginaAtual > 1) {
+                paginaAtual--;
+                mostrarLinhas();
+            }
+        });
+        
+        document.getElementById('btnProximo').addEventListener('click', function() {
+            if (paginaAtual < totalPaginas) {
+                paginaAtual++;
+                mostrarLinhas();
+            }
+        });
+        
+        document.getElementById('btnUltimo').addEventListener('click', function() {
+            if (paginaAtual !== totalPaginas) {
+                paginaAtual = totalPaginas;
+                mostrarLinhas();
+            }
+        });
+        
+        // Inicializar paginação e busca
+        mostrarLinhas();
+    });
+</script> 

@@ -1,0 +1,211 @@
+<!-- Tab de Categorias -->
+<div class="tab-pane fade {% if tab_ativa == 'categorias' %}show active{% endif %}" id="categorias" role="tabpanel" aria-labelledby="categorias-tab">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="fas fa-tags me-2"></i>Categorias</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCategoria">
+            <i class="fas fa-plus me-1"></i> Nova Categoria
+        </button>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <div class="input-group">
+                <input type="text" class="form-control" id="searchCategoria" placeholder="Buscar categoria...">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="tabelaCategorias">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nome</th>
+                            <th>Descrição</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for categoria in categorias %}
+                        <tr>
+                            <td>{{ categoria.nome }}</td>
+                            <td>{{ categoria.descricao }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if categoria.ativa else 'secondary' }}">
+                                    {{ 'Ativa' if categoria.ativa else 'Inativa' }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-primary editar-categoria" 
+                                            data-id="{{ categoria.id }}"
+                                            data-nome="{{ categoria.nome }}"
+                                            data-descricao="{{ categoria.descricao }}"
+                                            data-ativa="{{ categoria.ativa }}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger excluir-categoria" 
+                                            data-id="{{ categoria.id }}" 
+                                            data-nome="{{ categoria.nome }}">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-light">
+            <nav aria-label="Navegação de páginas">
+                <ul class="pagination justify-content-center mb-0" id="paginacaoCategorias">
+                    <!-- Paginação será preenchida via JavaScript -->
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- Adicionar o JavaScript para implementar a paginação ao final do arquivo -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Configuração da paginação para categorias
+        const itemsPorPagina = 10;
+        let paginaAtual = 1;
+        const tabela = document.getElementById('tabelaCategorias');
+        const linhas = tabela.querySelectorAll('tbody tr');
+        const paginacao = document.getElementById('paginacaoCategorias');
+        let termoBusca = '';
+        
+        // Função para mostrar as linhas da página atual
+        function mostrarLinhas() {
+            // Ocultar todas as linhas
+            linhas.forEach(linha => {
+                linha.style.display = 'none';
+            });
+            
+            // Filtrar linhas com base no termo de busca
+            const linhasVisiveis = [...linhas].filter(linha => {
+                if (termoBusca === '') return true;
+                
+                const nome = linha.cells[0].textContent.toLowerCase();
+                const descricao = linha.cells[1].textContent.toLowerCase();
+                
+                return nome.includes(termoBusca) || descricao.includes(termoBusca);
+            });
+            
+            // Calcular índices das linhas a serem exibidas
+            const inicio = (paginaAtual - 1) * itemsPorPagina;
+            const fim = inicio + itemsPorPagina;
+            
+            // Mostrar apenas as linhas da página atual
+            linhasVisiveis.slice(inicio, fim).forEach(linha => {
+                linha.style.display = '';
+            });
+            
+            // Atualizar a paginação
+            atualizarPaginacao(linhasVisiveis.length);
+        }
+        
+        // Função para atualizar os controles de paginação
+        function atualizarPaginacao(totalItens) {
+            const totalPaginas = Math.ceil(totalItens / itemsPorPagina);
+            
+            // Limpar paginação atual
+            paginacao.innerHTML = '';
+            
+            // Botão Anterior
+            const itemAnterior = document.createElement('li');
+            itemAnterior.className = `page-item ${paginaAtual === 1 ? 'disabled' : ''}`;
+            
+            const linkAnterior = document.createElement('a');
+            linkAnterior.className = 'page-link';
+            linkAnterior.href = '#';
+            linkAnterior.innerHTML = '&laquo;';
+            linkAnterior.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (paginaAtual > 1) {
+                    paginaAtual--;
+                    mostrarLinhas();
+                }
+            });
+            
+            itemAnterior.appendChild(linkAnterior);
+            paginacao.appendChild(itemAnterior);
+            
+            // Números das páginas
+            for (let i = 1; i <= totalPaginas; i++) {
+                const item = document.createElement('li');
+                item.className = `page-item ${i === paginaAtual ? 'active' : ''}`;
+                
+                const link = document.createElement('a');
+                link.className = 'page-link';
+                link.href = '#';
+                link.textContent = i;
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    paginaAtual = i;
+                    mostrarLinhas();
+                });
+                
+                item.appendChild(link);
+                paginacao.appendChild(item);
+            }
+            
+            // Botão Próximo
+            const itemProximo = document.createElement('li');
+            itemProximo.className = `page-item ${paginaAtual === totalPaginas || totalPaginas === 0 ? 'disabled' : ''}`;
+            
+            const linkProximo = document.createElement('a');
+            linkProximo.className = 'page-link';
+            linkProximo.href = '#';
+            linkProximo.innerHTML = '&raquo;';
+            linkProximo.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (paginaAtual < totalPaginas) {
+                    paginaAtual++;
+                    mostrarLinhas();
+                }
+            });
+            
+            itemProximo.appendChild(linkProximo);
+            paginacao.appendChild(itemProximo);
+        }
+        
+        // Event listener para busca
+        document.getElementById('searchCategoria').addEventListener('input', function() {
+            termoBusca = this.value.toLowerCase();
+            paginaAtual = 1; // Resetar para a primeira página
+            mostrarLinhas();
+        });
+        
+        // Inicializar a exibição
+        mostrarLinhas();
+        
+        // Configurar botões de editar categoria
+        document.querySelectorAll('.editar-categoria').forEach(botao => {
+            botao.addEventListener('click', function() {
+                const modal = new bootstrap.Modal(document.getElementById('modalEditarCategoria'));
+                
+                document.getElementById('editCategoriaId').value = this.dataset.id;
+                document.getElementById('editCategoriaNome').value = this.dataset.nome;
+                document.getElementById('editCategoriaDescricao').value = this.dataset.descricao;
+                document.getElementById('editCategoriaAtiva').checked = this.dataset.ativa === 'True';
+                
+                modal.show();
+            });
+        });
+        
+        // Configurar botões de excluir categoria
+        document.querySelectorAll('.excluir-categoria').forEach(botao => {
+            botao.addEventListener('click', function() {
+                document.getElementById('deleteCategoriaId').value = this.dataset.id;
+                document.getElementById('deleteCategoriaNome').textContent = this.dataset.nome;
+                
+                const modal = new bootstrap.Modal(document.getElementById('modalExcluirCategoria'));
+                modal.show();
+            });
+        });
+    });
+</script> 

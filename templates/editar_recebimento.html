@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Recebimento{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Editar Recebimento</h1>
+    
+    <div class="card">
+        <div class="card-body">
+            <form id="recebimentoForm" method="post" action="{{ url_for('editar_recebimento', id=recebimento.id) }}">
+                <div class="row">
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <label for="dataRecebimento" class="form-label">Data de Recebimento</label>
+                        <input type="date" class="form-control" id="dataRecebimento" name="dataRecebimento" value="{{ recebimento.data_recebimento }}" required>
+                    </div>
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <label for="dataPrevista" class="form-label">Data Prevista</label>
+                        <input type="date" class="form-control" id="dataPrevista" name="dataPrevista" value="{{ recebimento.data_prevista }}" required>
+                    </div>
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <label for="pc" class="form-label">PC (Pedido de Compra)</label>
+                        <input type="text" class="form-control" id="pc" name="pc" value="{{ recebimento.pc }}" required>
+                    </div>
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <label for="nf" class="form-label">NF (Nota Fiscal)</label>
+                        <input type="text" class="form-control" id="nf" name="nf" value="{{ recebimento.nf }}" required>
+                    </div>
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <label for="fornecedor" class="form-label">Fornecedor</label>
+                        <select class="form-select" id="fornecedor" name="fornecedor_id" required>
+                            <option value="">Selecione...</option>
+                            {% for fornecedor in fornecedores %}
+                            <option value="{{ fornecedor.id }}" {% if fornecedor.id == recebimento.fornecedor_id %}selected{% endif %}>{{ fornecedor.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <label for="valor" class="form-label">Valor (R$)</label>
+                        <input type="number" class="form-control" id="valor" name="valor" value="{{ recebimento.valor }}" step="0.01" required>
+                    </div>
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <label for="quantidade" class="form-label">Quantidade Recebida</label>
+                        <input type="number" class="form-control" id="quantidade" name="quantidade" value="{{ recebimento.quantidade }}" required>
+                    </div>
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status" required onchange="toggleDescricao()">
+                            <option value="aprovado" {% if recebimento.status == 'aprovado' %}selected{% endif %}>Aprovado 100%</option>
+                            <option value="ac" {% if recebimento.status == 'ac' %}selected{% endif %}>AC (Aceito Condicionalmente)</option>
+                            <option value="rejeitado" {% if recebimento.status == 'rejeitado' %}selected{% endif %}>Rejeitado</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <label for="recebidoPor" class="form-label">Recebido por</label>
+                        <input type="text" class="form-control" id="recebidoPor" name="recebido_por" value="{{ recebimento.recebido_por }}" required>
+                    </div>
+                </div>
+                
+                <div id="problemasSection" class="alert alert-warning p-3 rounded-3" style="display: {% if recebimento.status == 'aprovado' %}none{% else %}block{% endif %};">
+                    <h5 class="alert-heading mb-3"><i class="fas fa-exclamation-triangle me-2"></i>Informações sobre Problemas</h5>
+                    <div class="mb-3">
+                        <label for="descricaoOcorrencia" class="form-label">Descrição da Ocorrência</label>
+                        <textarea class="form-control" id="descricaoOcorrencia" name="descricao_ocorrencia" rows="3" placeholder="Detalhar as informações referentes ao problema identificado no recebimento ou mesmo que tenha sido identificados após recebimento.">{{ recebimento.descricao_ocorrencia }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="acaoImediata" class="form-label">Ação Imediata</label>
+                        <textarea class="form-control" id="acaoImediata" name="acao_imediata" rows="3" placeholder="O que foi feito para resolver o problemas identificado, como devolução, retrabalho, aceite condicional, etc.">{{ recebimento.acao_imediata }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="acaoCorretiva" class="form-label">Ação Corretiva / Número</label>
+                        <input type="text" class="form-control" id="acaoCorretiva" name="acao_corretiva" value="{{ recebimento.acao_corretiva }}">
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                    <a href="{{ url_for('avaliacao_fornecedores', tab='recebimento') }}" class="btn btn-outline-secondary">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Função para mostrar/esconder seção de problemas no recebimento
+    function toggleDescricao() {
+        const status = document.getElementById('status').value;
+        const problemasSection = document.getElementById('problemasSection');
+        
+        if (status === 'ac' || status === 'rejeitado') {
+            problemasSection.style.display = 'block';
+        } else {
+            problemasSection.style.display = 'none';
+        }
+    }
+    
+    // Inicializar
+    document.addEventListener('DOMContentLoaded', function() {
+        toggleDescricao();
+        
+        // Ajusta layout para dispositivos móveis
+        function adjustForMobile() {
+            const viewportWidth = window.innerWidth;
+            const buttons = document.querySelector('.d-flex.gap-2');
+            
+            if (viewportWidth < 576) {
+                buttons.classList.remove('d-flex');
+                buttons.classList.add('d-grid', 'gap-2');
+            } else {
+                buttons.classList.add('d-flex');
+                buttons.classList.remove('d-grid', 'gap-2');
+            }
+        }
+        
+        // Executar ajuste inicial
+        adjustForMobile();
+        
+        // Adicionar evento para quando a janela for redimensionada
+        window.addEventListener('resize', adjustForMobile);
+    });
+</script>
+{% endblock %} 

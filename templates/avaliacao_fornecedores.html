@@ -1,0 +1,1821 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Avaliação de Fornecedores{% endblock %}
+
+{% block page_title %}<span style="font-weight: 700; color: #007bff;"><i class="fas fa-award me-2"></i>Avaliação de Fornecedores</span>{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex">
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-1"></i>Voltar
+    </a>
+</div>
+{% endblock %}
+
+{% block head_extras %}
+<style>
+    /* Cores e variáveis personalizadas */
+    :root {
+        --primary-color: #4e73df;
+        --secondary-color: #1cc88a;
+        --warning-color: #f6c23e;
+        --danger-color: #e74a3b;
+        --dark-color: #5a5c69;
+        --light-color: #f8f9fc;
+        --card-border-radius: 0.5rem;
+        --transition-speed: 0.3s;
+    }
+
+    /* Estilos gerais */
+    .tabs .nav-tabs {
+        border-bottom: 2px solid var(--primary-color);
+    }
+
+    .tabs .nav-link {
+        font-weight: 600;
+        padding: 0.75rem 1.25rem;
+        border: none;
+        border-radius: 0.5rem 0.5rem 0 0;
+        color: var(--dark-color);
+        transition: all var(--transition-speed);
+    }
+
+    .tabs .nav-link:hover {
+        background-color: rgba(78, 115, 223, 0.1);
+    }
+
+    .tabs .nav-link.active {
+        color: white;
+        background-color: var(--primary-color);
+        border: none;
+    }
+
+    /* Cards e métricas */
+    .metric-card {
+        border: none;
+        border-radius: var(--card-border-radius);
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+        transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+    }
+
+    .metric-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 2rem 0 rgba(58, 59, 69, 0.15);
+    }
+
+    .metric-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .metric-value {
+        margin-top: 0.5rem;
+        font-size: 2rem !important;
+        font-weight: 700 !important;
+    }
+
+    /* Tabelas */
+    .table-responsive {
+        border-radius: var(--card-border-radius);
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+    }
+
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table thead th {
+        border-top: none;
+        background-color: var(--primary-color);
+        color: white !important;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.05em;
+        padding: 0.75rem 1rem;
+    }
+
+    .table thead {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+
+    .table-striped tbody tr:nth-of-type(odd) {
+        background-color: rgba(78, 115, 223, 0.05);
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(78, 115, 223, 0.075);
+    }
+
+    /* Add styles for card headers in tables */
+    .card-header, .card-title {
+        color: #333 !important;
+    }
+
+    /* Section headers in evaluation page */
+    .section-title {
+        color: #333 !important;
+        font-weight: 600;
+    }
+
+    /* Table headers in white sections need different styling */
+    .table-section-header {
+        background-color: var(--primary-color) !important;
+        color: white !important;
+        padding: 0.75rem 1rem;
+        font-weight: 600;
+        border-radius: var(--card-border-radius) var(--card-border-radius) 0 0;
+        margin-bottom: 0;
+    }
+
+    /* Formulários */
+    .form-section {
+        background-color: white;
+        border-radius: var(--card-border-radius);
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .form-section h2 {
+        color: var(--primary-color);
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        border-bottom: 1px solid rgba(78, 115, 223, 0.2);
+        padding-bottom: 0.75rem;
+    }
+
+    .form-section h3 {
+        color: var(--dark-color);
+        font-weight: 600;
+        margin: 1.5rem 0 1rem;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: var(--dark-color);
+        font-size: 0.9rem;
+    }
+
+    .form-control, .form-select {
+        border-radius: 0.5rem;
+        padding: 0.6rem 1rem;
+        border-color: #d1d3e2;
+    }
+
+    .form-control:focus, .form-select:focus {
+        box-shadow: 0 0 0 0.25rem rgba(78, 115, 223, 0.25);
+        border-color: #bac8f3;
+    }
+
+    /* Critérios de avaliação */
+    .criterios-avaliacao {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+        width: 100%;
+    }
+
+    .criterios-avaliacao .card {
+        border: none;
+        border-radius: var(--card-border-radius);
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+        transition: transform var(--transition-speed);
+    }
+
+    .criterios-avaliacao .card:hover {
+        transform: translateY(-5px);
+    }
+
+    .criterios-avaliacao h4 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+    }
+
+    @media (max-width: 992px) {
+        .criterios-avaliacao {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 576px) {
+        .criterios-avaliacao {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Botões */
+    .btn {
+        border-radius: 0.5rem;
+        padding: 0.6rem 1.25rem;
+        font-weight: 600;
+        box-shadow: 0 0.125rem 0.25rem 0 rgba(58, 59, 69, 0.2);
+        transition: all var(--transition-speed);
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.5rem 1rem 0 rgba(58, 59, 69, 0.2);
+    }
+
+    .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    .btn-success {
+        background-color: var(--secondary-color);
+        border-color: var(--secondary-color);
+    }
+
+    .btn-outline-secondary:hover {
+        background-color: var(--dark-color);
+        border-color: var(--dark-color);
+    }
+
+    /* Animações */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .tab-pane {
+        animation: fadeIn 0.5s ease-in-out;
+    }
+
+    /* Dashboard de métricas */
+    .metrics-dashboard {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+        width: 100%;
+    }
+
+    /* Específico para o dashboard da aba Análise de Desempenho */
+    #analise-desempenho .metrics-dashboard {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .metrics-dashboard .metric-card {
+        text-align: center;
+        padding: 0;
+        flex: 1;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+        border-radius: 0.5rem;
+        border: none;
+        transition: transform 0.3s ease;
+    }
+    
+    .metrics-dashboard .metric-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .metrics-dashboard .metric-card .card-body {
+        padding: 1.5rem;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    
+    .metrics-dashboard .metric-label {
+        font-size: 1rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.5rem;
+        color: #555;
+    }
+    
+    .metrics-dashboard .metric-value {
+        margin-top: 0.5rem;
+        font-size: 2.2rem !important;
+        font-weight: 700 !important;
+    }
+
+    @media (max-width: 992px) {
+        .metrics-dashboard, 
+        #analise-desempenho .metrics-dashboard {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .metrics-dashboard {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Análise de tendências */
+    #analise-tendencias {
+        border: none;
+        border-radius: var(--card-border-radius);
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+    }
+
+    /* Relatórios */
+    #reportContainer {
+        background-color: white;
+        border-radius: var(--card-border-radius);
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+        padding: 1.5rem;
+    }
+    
+    /* Exibição condicional */
+    .d-none {
+        display: none !important;
+    }
+    
+    /* Estilos para ícones de ação */
+    .action-icons {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+    }
+    
+    .action-icons .edit-icon,
+    .action-icons .delete-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        color: white;
+        transition: all 0.2s ease;
+    }
+    
+    .action-icons .edit-icon {
+        background-color: var(--primary-color);
+    }
+    
+    .action-icons .delete-icon {
+        background-color: var(--danger-color);
+        }
+        
+    .action-icons .edit-icon:hover,
+    .action-icons .delete-icon:hover {
+        opacity: 0.8;
+        transform: translateY(-3px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Melhorias para tabela de recebimentos */
+    .table-hover tbody.fs-6 tr td {
+        padding: 0.5rem 0.5rem;
+        vertical-align: middle;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        }
+        
+    /* Estilo específico para a coluna de fornecedor para mostrar mais texto */
+    .table-hover tbody.fs-6 tr td:nth-child(6) {
+        max-width: 150px;
+    }
+    
+    .table-hover tbody.fs-6 .badge {
+        font-size: 0.75rem;
+        padding: 0.35em 0.65em;
+        }
+        
+    .table thead th {
+        font-size: 0.85rem;
+        padding: 0.6rem 0.5rem;
+        }
+        
+    /* Regra de backup para ocultar linhas além das primeiras 10 */
+    .table-hover tbody.fs-6 tr:nth-child(n+11) {
+        display: none !important;
+    }
+
+    /* Estilos para a tabela de produção */
+    #recebimentosTable {
+        border-collapse: collapse;
+        width: 100%;
+        margin-bottom: 0;
+        min-width: 1200px; /* Garantir largura mínima para forçar rolagem quando necessário */
+    }
+
+    #recebimentosTable thead tr {
+        background-color: #007bff;
+        color: white;
+        font-weight: 500;
+        text-transform: uppercase;
+        }
+        
+    #recebimentosTable th,
+    #recebimentosTable td {
+        padding: 12px 16px;
+        text-align: left;
+        border: 1px solid #e3e6f0;
+        }
+        
+    #recebimentosTable tbody tr:nth-child(even) {
+        background-color: #f8f9fc;
+    }
+
+    #recebimentosTable tbody tr:hover {
+        background-color: #eaecf4;
+    }
+
+    /* Estilos para colunas de descrição */
+    #recebimentosTable td:nth-child(8),
+    #recebimentosTable td:nth-child(9),
+    #recebimentosTable td:nth-child(10) {
+        max-width: 150px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    /* Centralizar coluna de Ação Corretiva */
+    #recebimentosTable td:nth-child(10) {
+        text-align: center;
+        }
+        
+    /* Mostrar texto completo ao passar o mouse */
+    #recebimentosTable td:nth-child(8):hover,
+    #recebimentosTable td:nth-child(9):hover {
+        white-space: normal;
+        overflow: visible;
+        background-color: #f8f9fc;
+        position: relative;
+        z-index: 1;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border-radius: 4px;
+        }
+        
+    /* Mostrar texto completo ao passar o mouse para Ação Corretiva (centralizado) */
+    #recebimentosTable td:nth-child(10):hover {
+        white-space: normal;
+        overflow: visible;
+        background-color: #f8f9fc;
+        position: relative;
+        z-index: 1;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border-radius: 4px;
+        text-align: center;
+    }
+
+    .card-container {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+        margin-bottom: 25px;
+    }
+
+    .pagination .page-item.active .page-link {
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+
+    .pagination .page-link {
+        color: #007bff;
+    }
+
+    /* Estilos para a paginação igual à da página de Produções */
+    .pagination {
+        margin-bottom: 0;
+    }
+    
+    .pagination .page-item .page-link {
+            padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+        line-height: 1.25;
+        border: 1px solid #dee2e6;
+        color: #007bff;
+        }
+        
+    .pagination .page-item.active .page-link {
+        background-color: #007bff;
+        border-color: #007bff;
+        color: white;
+        font-weight: 500;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+    .pagination .page-item.disabled .page-link {
+        color: #6c757d;
+        background-color: #fff;
+        border-color: #dee2e6;
+    }
+    
+    .pagination .page-item:not(.active):not(.disabled) .page-link:hover {
+        background-color: #e9ecef;
+        border-color: #dee2e6;
+        color: #0056b3;
+    }
+    
+    /* Remover completamente as barras de rolagem */
+    .table-responsive::-webkit-scrollbar {
+        height: 8px; /* Altura da barra de rolagem horizontal */
+        display: block;
+    }
+    
+    .table-responsive::-webkit-scrollbar-thumb {
+        background-color: #c1c1c1;
+        border-radius: 4px;
+        }
+        
+    .table-responsive::-webkit-scrollbar-track {
+        background-color: #f1f1f1;
+        }
+        
+    .table-responsive {
+        -ms-overflow-style: auto; /* IE e Edge */
+        scrollbar-width: thin; /* Firefox */
+        overflow-x: auto !important; 
+        overflow-y: hidden !important;
+        max-height: none !important;
+    }
+
+    @media (max-width: 992px) {
+        .table-hover tbody tr td {
+            padding: 0.3rem 0.2rem;
+            font-size: 0.7rem;
+        }
+        
+        .table thead th {
+            font-size: 0.7rem;
+            padding: 0.4rem 0.3rem;
+        }
+        
+        .action-icons .edit-icon,
+        .action-icons .delete-icon {
+            width: 24px;
+            height: 24px;
+            font-size: 0.7rem;
+        }
+        }
+        
+    /* Estilos para paginação */
+    .pagination-sm .page-link {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+        line-height: 1.5;
+        border: 1px solid #dee2e6;
+        margin: 0 2px;
+    }
+
+    .pagination-sm .page-item.active .page-link {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        color: white;
+        font-weight: bold;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    
+    .pagination-sm .page-item:not(.active) .page-link {
+        color: var(--dark-color);
+        background-color: #fff;
+    }
+    
+    .pagination-sm .page-item:not(.active) .page-link:hover {
+        background-color: #f0f0f0;
+        border-color: #ced4da;
+        z-index: 1;
+    }
+    
+    .pagination-sm .page-item.disabled .page-link {
+        color: #6c757d;
+        background-color: #fff;
+        border-color: #dee2e6;
+        opacity: 0.6;
+    }
+
+    .pagination-sm {
+        margin-bottom: 0;
+    }
+    
+    /* Estilos para ordenação de colunas */
+    .sortable {
+        cursor: pointer;
+        position: relative;
+        padding-right: 25px !important;
+    }
+    
+    .sortable:after,
+    .sortable:before {
+        content: '';
+        position: absolute;
+        right: 10px;
+        width: 0;
+        height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        opacity: 0.3;
+        pointer-events: none;
+    }
+    
+    .sortable:before {
+        border-bottom: 5px solid #fff;
+        top: calc(50% - 8px);
+    }
+    
+    .sortable:after {
+        border-top: 5px solid #fff;
+        top: calc(50% + 1px);
+    }
+    
+    .sortable.asc:before,
+    .sortable.desc:after {
+        opacity: 1;
+    }
+    
+    /* Removendo estilos anteriores que conflitam */
+    .sort-indicator,
+    .sort-asc, 
+    .sort-desc {
+        display: none !important;
+    }
+    
+    .sort-indicator {
+        display: inline-flex;
+        flex-direction: column;
+        line-height: 0.7;
+        margin-left: 4px;
+    }
+    
+    .sort-asc, .sort-desc {
+        opacity: 0.4;
+        font-size: 0.8rem;
+        transition: opacity 0.2s ease;
+    }
+    
+    .sort-asc.active, .sort-desc.active {
+        opacity: 1;
+        color: #007bff;
+    }
+    
+    .sortable:hover .sort-asc:not(.active),
+    .sortable:hover .sort-desc:not(.active) {
+        opacity: 0.7;
+    }
+    
+    /* Estilos para cards com bordas coloridas à esquerda */
+    .border-left-primary {
+        border-left: 4px solid #4e73df !important;
+    }
+    
+    .border-left-success {
+        border-left: 4px solid #1cc88a !important;
+    }
+    
+    .border-left-info {
+        border-left: 4px solid #36b9cc !important;
+    }
+    
+    .border-left-warning {
+        border-left: 4px solid #f6c23e !important;
+    }
+    
+    .border-left-danger {
+        border-left: 4px solid #e74a3b !important;
+    }
+
+    /* Estilos para badges de status mais suaves */
+    .badge.bg-success {
+        background-color: rgba(28, 200, 138, 0.15) !important;
+        color: #0d8a5c !important; /* Verde mais escuro e forte */
+        font-weight: 600; /* Fonte um pouco mais grossa */
+        padding: 0.45em 0.85em;
+        font-size: 0.85em;
+        letter-spacing: 0.02em;
+        min-width: 75px;
+        text-align: center;
+    }
+    
+    .badge.bg-warning {
+        background-color: rgba(246, 194, 62, 0.15) !important;
+        color: #d4a30c !important; /* Amarelo mais escuro e forte */
+        font-weight: 600; /* Fonte um pouco mais grossa */
+        padding: 0.45em 0.85em;
+        font-size: 0.85em;
+        letter-spacing: 0.02em;
+        min-width: 75px;
+        text-align: center;
+    }
+    
+    .badge.bg-danger {
+        background-color: rgba(231, 74, 59, 0.15) !important;
+        color: #e74a3b !important;
+        font-weight: 600;
+        padding: 0.45em 0.85em;
+        font-size: 0.85em;
+        letter-spacing: 0.02em;
+        min-width: 75px;
+        text-align: center;
+    }
+    
+    .badge.rounded-pill {
+        border-radius: 50rem !important;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    }
+    
+    /* Estilos para placeholders mais suaves */
+    ::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
+        color: rgba(108, 117, 125, 0.45) !important;
+        font-style: italic;
+        opacity: 1; /* Firefox */
+    }
+    
+    :-ms-input-placeholder { /* Internet Explorer 10-11 */
+        color: rgba(108, 117, 125, 0.45) !important;
+        font-style: italic;
+    }
+    
+    ::-ms-input-placeholder { /* Microsoft Edge */
+        color: rgba(108, 117, 125, 0.45) !important;
+        font-style: italic;
+    }
+    
+    /* Campos específicos na aba de fornecedores */
+    #nomeFornecedor::placeholder,
+    #cnpjFornecedor::placeholder,
+    #emailFornecedor::placeholder,
+    #telefoneFornecedor::placeholder,
+    #searchFornecedor::placeholder,
+    #searchEmail::placeholder {
+        opacity: 0.6;
+        font-size: 0.9em;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card mt-4 mb-4">
+        <div class="card-body">
+            <div class="tabs">
+                <div class="nav nav-tabs" id="fornecedor-tabs" role="tablist">
+                    <button class="nav-link {% if not tab_ativa or tab_ativa == 'recebimento' %}active{% endif %}" id="recebimento-tab" data-bs-toggle="tab" data-bs-target="#recebimento" type="button" role="tab" aria-controls="recebimento" aria-selected="{% if not tab_ativa or tab_ativa == 'recebimento' %}true{% else %}false{% endif %}">Recebimento de Materiais</button>
+                    <button class="nav-link {% if tab_ativa == 'fornecedores' %}active{% endif %}" id="fornecedores-tab" data-bs-toggle="tab" data-bs-target="#fornecedores" type="button" role="tab" aria-controls="fornecedores" aria-selected="{% if tab_ativa == 'fornecedores' %}true{% else %}false{% endif %}">Fornecedores</button>
+                    <button class="nav-link {% if tab_ativa == 'avaliacao' %}active{% endif %}" id="avaliacao-tab" data-bs-toggle="tab" data-bs-target="#avaliacao" type="button" role="tab" aria-controls="avaliacao" aria-selected="{% if tab_ativa == 'avaliacao' %}true{% else %}false{% endif %}">Avaliação de Fornecedores</button>
+                    <button class="nav-link {% if tab_ativa == 'analise-desempenho' %}active{% endif %}" id="analise-desempenho-tab" data-bs-toggle="tab" data-bs-target="#analise-desempenho" type="button" role="tab" aria-controls="analise-desempenho" aria-selected="{% if tab_ativa == 'analise-desempenho' %}true{% else %}false{% endif %}">Análise de Desempenho</button>
+                    <a href="{{ url_for('relatorios_fornecedores') }}" class="nav-link {% if tab_ativa == 'relatorios' %}active{% endif %}" id="relatorios-tab">Relatórios</a>
+                </div>
+            </div>
+
+            <div class="tab-content mt-3" id="fornecedor-content">
+                <!-- Tab de Recebimento de Materiais -->
+                <div class="tab-pane fade {% if not tab_ativa or tab_ativa == 'recebimento' %}show active{% endif %}" id="recebimento" role="tabpanel" aria-labelledby="recebimento-tab">
+                    <!-- Card de Novo Recebimento -->
+                    <div class="card mb-4 shadow-sm">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0" style="color: #007bff;">Novo Recebimento</h5>
+                        </div>
+                        <div class="card-body">
+                        <form id="recebimentoForm" method="post" action="{{ url_for('adicionar_recebimento') }}">
+                                <div class="row g-3">
+                                    <div class="col-md-6 col-lg-3">
+                                    <label for="dataRecebimento" class="form-label">Data de Recebimento</label>
+                                        <input type="date" class="form-control" id="dataRecebimento" name="dataRecebimento" required 
+                                           data-date-format="DD/MM/YYYY">
+                                </div>
+                                    <div class="col-md-6 col-lg-3">
+                                    <label for="dataPrevista" class="form-label">Data Prevista</label>
+                                        <input type="date" class="form-control" id="dataPrevista" name="dataPrevista" required
+                                           data-date-format="DD/MM/YYYY">
+                                </div>
+                                    <div class="col-md-6 col-lg-3">
+                                    <label for="pc" class="form-label">PC (Pedido de Compra)</label>
+                                        <input type="text" class="form-control" id="pc" name="pc" required>
+                                </div>
+                                    <div class="col-md-6 col-lg-3">
+                                    <label for="nf" class="form-label">NF (Nota Fiscal)</label>
+                                        <input type="text" class="form-control" id="nf" name="nf" required>
+                                </div>
+                                    <div class="col-md-6 col-lg-3">
+                                    <label for="fornecedor" class="form-label">Fornecedor</label>
+                                        <select class="form-select" id="fornecedor" name="fornecedor_id" required>
+                                        <option value="">Selecione...</option>
+                                        {% for fornecedor in fornecedores %}
+                                        <option value="{{ fornecedor.id }}">{{ fornecedor.nome }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                    <div class="col-md-6 col-lg-3">
+                                    <label for="valor" class="form-label">Valor (R$)</label>
+                                        <input type="number" class="form-control" id="valor" name="valor" step="0.01" required>
+                                </div>
+                                    <div class="col-md-6 col-lg-3">
+                                    <label for="quantidade" class="form-label">Quantidade Recebida</label>
+                                        <input type="number" class="form-control" id="quantidade" name="quantidade" required>
+                                </div>
+                                    <div class="col-md-6 col-lg-3">
+                                    <label for="status" class="form-label">Status</label>
+                                        <select class="form-select" id="status" name="status" required onchange="toggleDescricao()">
+                                        <option value="aprovado">Aprovado 100%</option>
+                                        <option value="ac">AC (Aceito Condicionalmente)</option>
+                                        <option value="rejeitado">Rejeitado</option>
+                                    </select>
+                                </div>
+                                    <input type="hidden" name="recebido_por" value="{{ session.get('user_name', '') }}">
+                            </div>
+                            
+                                <div id="problemasSection" class="alert alert-warning p-3 rounded-3 mt-3" style="display: none;">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <i class="fas fa-exclamation-triangle me-2 fs-5"></i>
+                                        <h5 class="alert-heading mb-0">Informações sobre Problemas</h5>
+                                </div>
+                                    <div class="row g-3">
+                                        <div class="col-md-12">
+                                    <label for="descricaoOcorrencia" class="form-label">Descrição da Ocorrência</label>
+                                            <textarea class="form-control" id="descricaoOcorrencia" name="descricao_ocorrencia" rows="3" placeholder="Detalhar as informações referentes ao problema identificado no recebimento ou mesmo que tenha sido identificados após recebimento."></textarea>
+                                </div>
+                                        <div class="col-md-12">
+                                    <label for="acaoImediata" class="form-label">Ação Imediata</label>
+                                            <textarea class="form-control" id="acaoImediata" name="acao_imediata" rows="3" placeholder="O que foi feito para resolver o problemas identificado, como devolução, retrabalho, aceite condicional, etc."></textarea>
+                                </div>
+                                        <div class="col-md-6">
+                                    <label for="acaoCorretiva" class="form-label">Ação Corretiva / Número</label>
+                                            <input type="text" class="form-control" id="acaoCorretiva" name="acao_corretiva">
+                                        </div>
+                                </div>
+                            </div>
+
+                                <div class="mt-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i> Registrar Recebimento
+                            </button>
+                                </div>
+                        </form>
+                        </div>
+                    </div>
+
+                    <!-- Card de Lista de Recebimentos -->
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0" style="color: #007bff;"></i>Lista de Recebimentos</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0" id="recebimentosTable">
+                                <thead class="table-primary">
+                                        <tr>
+                                            <th width="15%" class="border-end sortable" data-sort="fornecedor">Fornecedor</th>
+                                            <th width="6%" class="border-end sortable" data-sort="pc">PC</th>
+                                            <th width="6%" class="border-end sortable" data-sort="nf">NF</th>
+                                            <th width="7%" class="border-end text-center sortable" data-sort="quantidade">Quantidade</th>
+                                            <th width="8%" class="border-end sortable" data-sort="valor">Valor (R$)</th>
+                                            <th width="10%" class="border-end sortable" data-sort="data">Data</th>
+                                            <th width="14%" class="border-end text-center">Status</th>
+                                            <th width="10%" class="border-end">Descrição da Ocorrência</th>
+                                            <th width="10%" class="border-end">Ação Imediata</th>
+                                            <th width="6%" class="border-end text-center">Ação Corretiva</th>
+                                            <th width="8%">Usuário</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for recebimento in recebimentos %}
+                                    <tr>
+                                            <td>{{ recebimento.fornecedor_nome }}</td>
+                                        <td>{{ recebimento.pc }}</td>
+                                        <td>{{ recebimento.nf }}</td>
+                                        <td class="text-center">{{ recebimento.quantidade }}</td>
+                                            <td>{{ recebimento.valor|format_currency }}</td>
+                                            <td>{{ recebimento.data_recebimento|formatdatetime('%d/%m/%Y s %H:%Mh') }}</td>
+                                        <td class="text-center">
+                                            <span class="badge rounded-pill 
+                                                {% if recebimento.status == 'aprovado' %}bg-success
+                                                    {% elif recebimento.status == 'ac' %}bg-warning text-dark
+                                                {% else %}bg-danger{% endif %}">
+                                                {{ recebimento.status|format_status }}
+                                            </span>
+                                        </td>
+                                            <td>{{ recebimento.descricao_ocorrencia|default('', true) }}</td>
+                                            <td>{{ recebimento.acao_imediata|default('', true) }}</td>
+                                            <td>{{ recebimento.acao_corretiva|default('', true) }}</td>
+                                            <td>{{ recebimento.recebido_por }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-light">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-primary">Total: {{ recebimentos|length }}</span>
+                                <nav aria-label="Navegação de páginas">
+                                    <ul class="pagination justify-content-center mb-0" id="paginacaoRecebimentos">
+                                        <li class="page-item disabled">
+                                            <a class="page-link" href="#" aria-label="Anterior">
+                                                <span aria-hidden="true">&laquo;</span>
+                                            </a>
+                                        </li>
+                                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                                        <li class="page-item"><a class="page-link" href="#">&raquo;</a></li>
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab de Fornecedores -->
+                <div class="tab-pane fade {% if tab_ativa == 'fornecedores' %}show active{% endif %}" id="fornecedores" role="tabpanel" aria-labelledby="fornecedores-tab">
+                    <!-- Card para adicionar fornecedor -->
+                    <div class="card mb-4 shadow-sm">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0" style="color: #007bff;"></i>Adicionar Fornecedor</h5>
+                        </div>
+                        <div class="card-body">
+                        <form id="fornecedorForm" method="post" action="{{ url_for('adicionar_fornecedor') }}">
+                            <div class="row">
+                                <div class="col-md-6 col-lg-3 mb-3">
+                                    <label for="nomeFornecedor" class="form-label">Nome do Fornecedor</label>
+                                    <input type="text" class="form-control shadow-sm" id="nomeFornecedor" name="nome" required>
+                                </div>
+                                <div class="col-md-6 col-lg-3 mb-3">
+                                    <label for="cnpjFornecedor" class="form-label">CNPJ</label>
+                                    <input type="text" class="form-control shadow-sm" id="cnpjFornecedor" name="cnpj" placeholder="XX.XXX.XXX/XXXX-XX" maxlength="18" oninput="formatarCNPJ(this)" onblur="validarCNPJ(this)" required minlength="18">
+                                </div>
+                                <div class="col-md-6 col-lg-3 mb-3">
+                                    <label for="emailFornecedor" class="form-label">E-mail</label>
+                                    <input type="email" class="form-control shadow-sm" id="emailFornecedor" name="email">
+                                </div>
+                                <div class="col-md-6 col-lg-3 mb-3">
+                                    <label for="telefoneFornecedor" class="form-label">Telefone</label>
+                                    <input type="text" class="form-control shadow-sm" id="telefoneFornecedor" name="telefone" placeholder="(XX) XXXXX-XXXX" maxlength="15" oninput="formatarTelefone(this)">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-1"></i> Adicionar Fornecedor
+                            </button>
+                        </form>
+                        </div>
+                    </div>
+
+                    <!-- Buscador para fornecedores -->
+                    <div class="card mb-4">
+                        <div class="card-body py-3">
+                            <form id="formBuscaFornecedores" class="row g-2 align-items-end">
+                                <div class="col-md-5">
+                                    <label for="searchFornecedor" class="form-label mb-1">Buscar por nome:</label>
+                                    <input type="text" class="form-control" id="searchFornecedor" placeholder="Digite o nome do fornecedor...">
+                                </div>
+                                <div class="col-md-5">
+                                    <label for="searchEmail" class="form-label mb-1">Filtrar por Email:</label>
+                                    <input type="text" class="form-control" id="searchEmail" placeholder="Digite o email...">
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="fas fa-search me-1"></i>Buscar
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div id="resultadoBuscaFornecedores" class="d-flex justify-content-between align-items-center mb-3" style="display: none;">
+                        <p class="mb-0"><span id="contadorResultadosFornecedores"></span> Fornecedor(es) encontrado(s)</p>
+                        <p class="mb-0" id="filtrosAplicadosFornecedores" style="display: none;">
+                            <span id="fornecedorBadge" class="badge bg-info" style="display: none;"></span>
+                            <span id="emailBadge" class="badge bg-info ms-1" style="display: none;"></span>
+                            <button id="limparFiltrosFornecedores" class="btn btn-sm btn-outline-secondary ms-2">Limpar filtros</button>
+                        </p>
+                    </div>
+
+                    <!-- Card para lista de fornecedores -->
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0" style="color: #007bff;"></i>Lista de Fornecedores</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0" id="fornecedoresTable">
+                                    <thead class="table-primary">
+                                        <tr>
+                                            <th width="5%" class="border-end sortable" data-sort="id">ID</th>
+                                            <th width="20%" class="border-end sortable" data-sort="nome">Nome</th>
+                                            <th width="8%" class="border-end sortable" data-sort="cnpj">CNPJ</th>
+                                            <th width="40%" class="border-end sortable" data-sort="email">E-mail</th>
+                                            <th width="12%" class="border-end d-none d-md-table-cell sortable" data-sort="telefone">Telefone</th>
+                                            <th width="10%" class="text-center">Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for fornecedor in fornecedores %}
+                                    <tr>
+                                            <td class="border-end">{{ fornecedor.id }}</td>
+                                            <td class="border-end">{{ fornecedor.nome }}</td>
+                                            <td class="border-end">{{ fornecedor.cnpj }}</td>
+                                            <td class="border-end">{{ fornecedor.email }}</td>
+                                            <td class="border-end d-none d-md-table-cell">{{ fornecedor.telefone }}</td>
+                                            <td class="text-center">
+                                                <div class="d-flex justify-content-center">
+                                                    <a href="{{ url_for('editar_fornecedor', id=fornecedor.id) }}" class="action-icon edit-icon me-2">
+                                                        <i class="fa fa-edit"></i>
+                                                    </a>
+                                                    <a href="#" class="action-icon delete-icon delete-fornecedor" data-fornecedor-id="{{ fornecedor.id }}" data-fornecedor-nome="{{ fornecedor.nome }}" title="Excluir">
+                                                        <i class="fa fa-trash"></i>
+                                                    </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-light">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-primary">Total: {{ fornecedores|length }}</span>
+                                <nav aria-label="Navegação de páginas">
+                                    <ul class="pagination justify-content-center mb-0" id="paginacaoFornecedores">
+                                        <li class="page-item disabled">
+                                            <a class="page-link" href="#" aria-label="Anterior">
+                                                <span aria-hidden="true">&laquo;</span>
+                                            </a>
+                                        </li>
+                                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                                        <li class="page-item"><a class="page-link" href="#">&raquo;</a></li>
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab de Avaliação de Fornecedores -->
+                <div class="tab-pane fade {% if tab_ativa == 'avaliacao' %}show active{% endif %}" id="avaliacao" role="tabpanel" aria-labelledby="avaliacao-tab">
+                    <div class="card mb-4 shadow-sm">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0" style="color: #007bff;"><i class="fas fa-chart-bar me-2"></i>Métricas de Avaliação</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="metrics-dashboard">
+                        <div class="metric-card">
+                            <div class="card-body">
+                                <div class="metric-label">Meta Pontualidade</div>
+                                <div class="metric-value text-primary">85%</div>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="card-body">
+                                <div class="metric-label">Meta Qualidade</div>
+                                <div class="metric-value text-primary">85%</div>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="card-body">
+                                <div class="metric-label">Total de Recebimentos</div>
+                                <div class="metric-value text-primary" id="totalRecebimentos">{{ total_recebimentos }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0" style="color: #007bff;"><i class="fas fa-clipboard-check me-2"></i>Avaliação dos Fornecedores</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0" id="avaliacaoTable">
+                                    <thead class="table-primary">
+                                        <tr>
+                                            <th width="25%" class="border-end text-center">Fornecedor</th>
+                                            <th width="8%" class="border-end text-center">Total</th>
+                                            <th width="8%" class="border-end text-center">Aprov.</th>
+                                            <th width="10%" class="border-end text-center">AC/Rej.</th>
+                                            <th width="12%" class="border-end text-center">% Aprov.</th>
+                                            <th width="12%" class="border-end text-center">% Pont.</th>
+                                            <th width="10%" class="border-end d-none d-md-table-cell text-center">Atrasos</th>
+                                            <th width="15%" class="text-center">Score</th>
+                                    </tr>
+                                </thead>
+                                    <tbody>
+                                    {% for avaliacao in avaliacoes %}
+                                    <tr>
+                                            <td class="border-end text-center">{{ avaliacao.nome }}</td>
+                                            <td class="border-end text-center">{{ avaliacao.total }}</td>
+                                            <td class="border-end text-center">{{ avaliacao.aprovado100 }}</td>
+                                            <td class="border-end text-center">{{ avaliacao.acRejeitado }}</td>
+                                            <td class="border-end text-center">{{ avaliacao.percentualAprovacao }}%</td>
+                                            <td class="border-end text-center">{{ avaliacao.percentualPontualidade }}%</td>
+                                            <td class="border-end text-center d-none d-md-table-cell">{{ avaliacao.emAtraso }}</td>
+                                            <td class="text-center {{ 'text-success fw-bold' if avaliacao.scoreFinal >= 85 else 'text-danger fw-bold' }}">{{ avaliacao.scoreFinal }}%</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-light">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-primary">Total: {{ avaliacoes|length }}</span>
+                                <nav aria-label="Navegação de páginas">
+                                    <ul class="pagination justify-content-center mb-0" id="paginacaoAvaliacoes">
+                                        <li class="page-item disabled">
+                                            <a class="page-link" href="#" aria-label="Anterior">
+                                                <span aria-hidden="true">&laquo;</span>
+                                            </a>
+                                        </li>
+                                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                                        <li class="page-item"><a class="page-link" href="#">&raquo;</a></li>
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab de Análise de Desempenho -->
+                <div class="tab-pane fade {% if tab_ativa == 'analise-desempenho' %}show active{% endif %}" id="analise-desempenho" role="tabpanel" aria-labelledby="analise-desempenho-tab">
+                    <div class="card mb-4 shadow-sm">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0" style="color: #007bff;"><i class="fas fa-chart-line me-2"></i>Análise do Desempenho dos Fornecedores</h5>
+                        </div>
+                        <div class="card-body">
+                        <div class="metrics-dashboard">
+                            <div class="metric-card">
+                                <div class="card-body">
+                                    <div class="metric-label">Total de Fornecedores</div>
+                                    <div class="metric-value text-primary" id="totalFornecedoresAnalise">{{ total_fornecedores }}</div>
+                                </div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="card-body">
+                                    <div class="metric-label">Acima da Meta</div>
+                                    <div class="metric-value text-success" id="fornecedoresAcimaMeta">{{ fornecedores_acima_meta }}</div>
+                                </div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="card-body">
+                                    <div class="metric-label">Abaixo da Meta</div>
+                                    <div class="metric-value text-danger" id="fornecedoresAbaixoMeta">{{ fornecedores_abaixo_meta }}</div>
+                                </div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="card-body">
+                                    <div class="metric-label">Média Geral</div>
+                                    <div class="metric-value text-primary" id="mediaGeralPerformance">{{ media_geral_performance }}%</div>
+                                    </div>
+                                </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    <div class="card mb-4 shadow-sm">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0" style="color: #007bff;"><i class="fas fa-clipboard me-2"></i>Critérios de Avaliação</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="criterios-avaliacao">
+                            <div class="criterio card">
+                                <div class="card-body border-start border-primary border-4">
+                                    <h4 class="text-primary">Pontualidade</h4>
+                                    <p class="mb-1">Mede o percentual de entregas realizadas dentro do prazo estipulado.</p>
+                                    <p class="mb-0"><strong>Meta:</strong> 85%</p>
+                                        <p class="mb-0"><strong>Cálculo:</strong> (Entregas no prazo / Total de entregas) x 100</p>
+                                </div>
+                            </div>
+                            <div class="criterio card">
+                                <div class="card-body border-start border-success border-4">
+                                    <h4 class="text-success">Qualidade</h4>
+                                    <p class="mb-1">Avalia o percentual de produtos recebidos em conformidade total.</p>
+                                    <p class="mb-0"><strong>Meta:</strong> 85%</p>
+                                        <p class="mb-0"><strong>Cálculo:</strong> (Aprovações 100% / Total de recebimentos) x 100</p>
+                                </div>
+                            </div>
+                            <div class="criterio card">
+                                <div class="card-body border-start border-warning border-4">
+                                    <h4 class="text-warning">Score Final</h4>
+                                        <p class="mb-1">Média ponderada dos critérios de avaliação.</p>
+                                        <p class="mb-0"><strong>Cálculo:</strong> (Pontualidade + Qualidade) / 2</p>
+                                    </div>
+                                </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0" style="color: #007bff;"><i class="fas fa-trophy me-2"></i>Ranking de Fornecedores</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0" id="rankingFornecedoresTable">
+                                    <thead class="table-primary">
+                                        <tr>
+                                            <th width="5%" class="border-end text-center">Pos.</th>
+                                            <th width="25%" class="border-end text-center">Fornecedor</th>
+                                            <th width="10%" class="border-end d-none d-md-table-cell text-center">Total</th>
+                                            <th width="12%" class="border-end text-center">% Pont.</th>
+                                            <th width="12%" class="border-end text-center">% Qual.</th>
+                                            <th width="12%" class="border-end text-center">Score</th>
+                                            <th width="10%" class="border-end text-center">Status</th>
+                                            <th width="14%" class="d-none d-sm-table-cell text-center">Tendência</th>
+                                    </tr>
+                                </thead>
+                                    <tbody>
+                                    {% for ranking in ranking_fornecedores %}
+                                    <tr>
+                                            <td class="fw-bold border-end text-center">{{ loop.index }}°</td>
+                                            <td class="border-end text-center">{{ ranking.fornecedor.nome }}</td>
+                                            <td class="border-end text-center d-none d-md-table-cell">{{ ranking.totalRecebimentos }}</td>
+                                            <td class="border-end text-center">{{ ranking.percPontualidade|round(1) }}%</td>
+                                            <td class="border-end text-center">{{ ranking.percQualidade|round(1) }}%</td>
+                                            <td class="border-end text-center fw-bold">{{ ranking.scoreFinal|round(1) }}%</td>
+                                            <td class="border-end text-center
+                                            {% if ranking.scoreFinal >= 85 %}text-success fw-bold
+                                            {% elif ranking.scoreFinal >= 70 %}text-warning fw-bold
+                                            {% else %}text-danger fw-bold{% endif %}">
+                                            {{ ranking.status }}
+                                        </td>
+                                            <td class="text-center d-none d-sm-table-cell
+                                            {% if ranking.tendencia.texto == 'Melhora' %}text-success
+                                            {% elif ranking.tendencia.texto == 'Piora' %}text-danger
+                                            {% else %}text-primary{% endif %}">
+                                            <i class="fas 
+                                                {% if ranking.tendencia.texto == 'Melhora' %}fa-arrow-up
+                                                {% elif ranking.tendencia.texto == 'Piora' %}fa-arrow-down
+                                                {% else %}fa-minus{% endif %} me-1"></i>
+                                            {{ ranking.tendencia.texto }}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-light">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-primary">Total: {{ ranking_fornecedores|length }}</span>
+                                <nav aria-label="Navegação de páginas">
+                                    <ul class="pagination justify-content-center mb-0" id="paginacaoRanking">
+                                        <li class="page-item disabled">
+                                            <a class="page-link" href="#" aria-label="Anterior">
+                                                <span aria-hidden="true">&laquo;</span>
+                                            </a>
+                                        </li>
+                                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                                        <li class="page-item"><a class="page-link" href="#">&raquo;</a></li>
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+                        </div>
+
+                    <div class="card mt-4">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0" style="color: #007bff;"><i class="fas fa-chart-bar me-2"></i>Análise de Tendências e Ações</h5>
+                        </div>
+                    <div class="card-body">
+                        {{ analise_tendencias|safe }}
+            </div>
+        </div>
+    </div>
+            </div>
+
+<!-- Tab de Relatórios -->
+<div class="tab-pane fade {% if tab_ativa == 'relatorios' %}show active{% endif %}" id="relatorios" role="tabpanel" aria-labelledby="relatorios-tab">
+    <div class="text-center p-5">
+        <h3 class="mb-4" style="color: #007bff;"><i class="fas fa-chart-line me-2"></i>Relatórios de Fornecedores</h3>
+        <p class="lead mb-4">Esta seção permite gerar relatórios detalhados sobre o desempenho dos fornecedores, incluindo dados históricos e análises comparativas.</p>
+        <a href="{{ url_for('relatorios_fornecedores') }}" class="btn btn-primary btn-lg">
+            <i class="fas fa-external-link-alt me-2"></i>Acessar Página de Relatórios
+        </a>
+    </div>
+</div>
+
+<script>
+    // Toggle a seção de problemas baseado no status
+    function toggleDescricao() {
+        var status = document.getElementById('status').value;
+        var problemasSection = document.getElementById('problemasSection');
+        
+        if (status === 'ac' || status === 'rejeitado') {
+            problemasSection.style.display = 'block';
+        } else {
+            problemasSection.style.display = 'none';
+        }
+    }
+
+    // Função para atualizar os campos de filtro de relatórios baseado no tipo selecionado
+    function atualizarTipoFiltro() {
+        var tipoFiltro = document.getElementById('tipoFiltro');
+        var grupoFiltroMes = document.getElementById('grupoFiltroMes');
+        var grupoFiltroTrimestre = document.getElementById('grupoFiltroTrimestre');
+        var grupoFiltroAno = document.getElementById('grupoFiltroAno');
+        
+        if (tipoFiltro && grupoFiltroMes && grupoFiltroTrimestre && grupoFiltroAno) {
+            // Esconder todos os grupos primeiro
+            grupoFiltroMes.classList.add('d-none');
+            grupoFiltroTrimestre.classList.add('d-none');
+            grupoFiltroAno.classList.add('d-none');
+            
+            // Mostrar o grupo apropriado com base no tipo selecionado
+            switch (tipoFiltro.value) {
+                case 'mensal':
+                    grupoFiltroMes.classList.remove('d-none');
+                    break;
+                case 'trimestral':
+                    grupoFiltroTrimestre.classList.remove('d-none');
+                    break;
+                case 'anual':
+                    grupoFiltroAno.classList.remove('d-none');
+                    break;
+            }
+        }
+    }
+
+    // Inicializar tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+    
+    // Formatar CNPJ
+    function formatarCNPJ(input) {
+        let value = input.value.replace(/\D/g, '');
+        if (value.length > 14) value = value.substring(0, 14);
+        
+        // Formatar como XX.XXX.XXX/XXXX-XX
+        if (value.length > 12) {
+            value = value.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2}).*/, "$1.$2.$3/$4-$5");
+        } else if (value.length > 8) {
+            value = value.replace(/^(\d{2})(\d{3})(\d{3})(\d*)/, "$1.$2.$3/$4");
+        } else if (value.length > 5) {
+            value = value.replace(/^(\d{2})(\d{3})(\d*)/, "$1.$2.$3");
+        } else if (value.length > 2) {
+            value = value.replace(/^(\d{2})(\d*)/, "$1.$2");
+        }
+        
+        input.value = value;
+    }
+
+    // Validar CNPJ
+    function validarCNPJ(input) {
+        let cnpj = input.value.replace(/[^\d]/g, '');
+        
+        if (cnpj.length !== 14) {
+            input.setCustomValidity('CNPJ deve ter 14 dígitos');
+            return;
+        }
+        
+        input.setCustomValidity('');
+    }
+
+    // Formatar Telefone
+    function formatarTelefone(input) {
+        let valor = input.value.replace(/\D/g, '');
+        if (valor.length > 11) valor = valor.slice(0, 11);
+        
+        if (valor.length > 10) {
+            valor = valor.replace(/^(\d{2})(\d{5})(\d{4}).*/, '($1) $2-$3');
+        } else if (valor.length > 9) {
+            valor = valor.replace(/^(\d{2})(\d{4})(\d{4}).*/, '($1) $2-$3');
+        } else if (valor.length > 5) {
+            valor = valor.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, '($1) $2-$3');
+        } else if (valor.length > 2) {
+            valor = valor.replace(/^(\d{2})(\d{0,5})/, '($1) $2');
+        } else {
+            valor = valor.replace(/^(\d*)/, '($1');
+        }
+        
+        input.value = valor;
+    }
+
+    // Inicializar todas as páginas quando o documento estiver pronto
+    document.addEventListener('DOMContentLoaded', function() {
+        // Setup do modal de exclusão de fornecedor
+        document.querySelectorAll('.delete-fornecedor').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const fornecedorId = this.getAttribute('data-fornecedor-id');
+                const fornecedorNome = this.getAttribute('data-fornecedor-nome');
+                
+                document.getElementById('deleteFornecedorNome').textContent = fornecedorNome;
+                const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+                
+                confirmDeleteBtn.setAttribute('data-fornecedor-id', fornecedorId);
+                
+                // Abrir o modal de confirmação
+                const modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+                modal.show();
+            });
+        });
+        
+        // Inicializar paginação para recebimentos com 10 itens por página
+        const recebimentosTabela = document.getElementById('recebimentosTable');
+        const paginacaoRecebimentos = document.getElementById('paginacaoRecebimentos');
+        if (recebimentosTabela && paginacaoRecebimentos) {
+            const linhasRecebimentos = recebimentosTabela.querySelectorAll('tbody tr');
+            inicializarPaginacao(linhasRecebimentos, paginacaoRecebimentos, 10);
+            
+            // Adicionar ordenação para recebimentos
+            const thSortablesRecebimentos = recebimentosTabela.querySelectorAll('th.sortable');
+            thSortablesRecebimentos.forEach(th => {
+                th.addEventListener('click', function() {
+                    const campo = this.getAttribute('data-sort');
+                    ordenarTabela('recebimentosTable', 'paginacaoRecebimentos', campo);
+                });
+            });
+        }
+        
+        // Inicializar paginação para fornecedores com 10 itens por página
+        const fornecedoresTabela = document.getElementById('fornecedoresTable');
+        const paginacaoFornecedores = document.getElementById('paginacaoFornecedores');
+        if (fornecedoresTabela && paginacaoFornecedores) {
+            const linhasFornecedores = fornecedoresTabela.querySelectorAll('tbody tr');
+            inicializarPaginacao(linhasFornecedores, paginacaoFornecedores, 10);
+            
+            // Adicionar ordenação para fornecedores
+            const thSortablesFornecedores = fornecedoresTabela.querySelectorAll('th.sortable');
+            thSortablesFornecedores.forEach(th => {
+                th.addEventListener('click', function() {
+                    const campo = this.getAttribute('data-sort');
+                    ordenarTabela('fornecedoresTable', 'paginacaoFornecedores', campo);
+                });
+            });
+        }
+        
+        // Inicializar demais paginações
+        const avaliacoesTabela = document.getElementById('avaliacaoTable');
+        const paginacaoAvaliacoes = document.getElementById('paginacaoAvaliacoes');
+        if (avaliacoesTabela && paginacaoAvaliacoes) {
+            const linhasAvaliacoes = avaliacoesTabela.querySelectorAll('tbody tr');
+            inicializarPaginacao(linhasAvaliacoes, paginacaoAvaliacoes, 10);
+        }
+        
+        const rankingTabela = document.getElementById('rankingFornecedoresTable');
+        const paginacaoRanking = document.getElementById('paginacaoRanking');
+        if (rankingTabela && paginacaoRanking) {
+            const linhasRanking = rankingTabela.querySelectorAll('tbody tr');
+            inicializarPaginacao(linhasRanking, paginacaoRanking, 10);
+        }
+        
+        // Event listener para o botão de confirmar exclusão
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        if (confirmDeleteBtn) {
+            confirmDeleteBtn.addEventListener('click', function() {
+                const fornecedorId = this.getAttribute('data-fornecedor-id');
+                // Criar um formulário dinamicamente para fazer o POST
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/avaliacao-fornecedores/excluir-fornecedor/${fornecedorId}`;
+                document.body.appendChild(form);
+                form.submit();
+            });
+        }
+
+        // Funcionalidade de busca para fornecedores
+        const formBuscaFornecedores = document.getElementById('formBuscaFornecedores');
+        const inputFornecedor = document.getElementById('searchFornecedor');
+        const inputEmail = document.getElementById('searchEmail');
+        const resultadoBusca = document.getElementById('resultadoBuscaFornecedores');
+        const contadorResultados = document.getElementById('contadorResultadosFornecedores');
+        const filtrosAplicados = document.getElementById('filtrosAplicadosFornecedores');
+        const fornecedorBadge = document.getElementById('fornecedorBadge');
+        const emailBadge = document.getElementById('emailBadge');
+        const btnLimparFiltros = document.getElementById('limparFiltrosFornecedores');
+
+        if (formBuscaFornecedores) {
+            formBuscaFornecedores.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const termoFornecedor = inputFornecedor.value.toLowerCase().trim();
+                const termoEmail = inputEmail.value.toLowerCase().trim();
+                
+                // Filtrar os fornecedores
+                filtrarFornecedores(termoFornecedor, termoEmail);
+            });
+        }
+
+        if (btnLimparFiltros) {
+            btnLimparFiltros.addEventListener('click', function() {
+                // Limpar os campos de busca
+                inputFornecedor.value = '';
+                inputEmail.value = '';
+                
+                // Ocultar resultados
+                resultadoBusca.style.display = 'none';
+                filtrosAplicados.style.display = 'none';
+                fornecedorBadge.style.display = 'none';
+                emailBadge.style.display = 'none';
+                
+                // Mostrar todos os fornecedores
+                const fornecedoresTabela = document.getElementById('fornecedoresTable');
+                if (fornecedoresTabela) {
+                    const linhas = fornecedoresTabela.querySelectorAll('tbody tr');
+                    linhas.forEach(linha => {
+                        linha.style.display = '';
+                    });
+                }
+
+                // Reinicializar a paginação
+                const tabelaId = 'fornecedoresTable';
+                const paginacaoId = 'paginacaoFornecedores';
+                const tabela = document.getElementById(tabelaId);
+                const paginacao = document.getElementById(paginacaoId);
+                if (tabela && paginacao) {
+                    const linhas = tabela.querySelectorAll('tbody tr');
+                    // Usar a função global do script.js
+                inicializarPaginacao(linhas, paginacao, 10);
+                }
+            });
+        }
+
+        // Função para filtrar fornecedores
+        function filtrarFornecedores(termoFornecedor, termoEmail) {
+            const tabela = document.getElementById('fornecedoresTable');
+            if (!tabela) return;
+            
+            const linhas = tabela.querySelectorAll('tbody tr');
+            let linhasFiltradas = [];
+            
+            // Filtrar as linhas que correspondem aos critérios
+            linhas.forEach(linha => {
+                const colNome = linha.querySelector('td:nth-child(2)');
+                const colEmail = linha.querySelector('td:nth-child(4)');
+                
+                if (!colNome || !colEmail) return;
+                
+                const nomeFornecedor = colNome.textContent.toLowerCase();
+                const emailFornecedor = colEmail.textContent.toLowerCase();
+                
+                const matchNome = !termoFornecedor || nomeFornecedor.includes(termoFornecedor);
+                const matchEmail = !termoEmail || emailFornecedor.includes(termoEmail);
+                
+                if (matchNome && matchEmail) {
+                    linha.style.display = '';
+                    linhasFiltradas.push(linha);
+                } else {
+                    linha.style.display = 'none';
+                }
+            });
+            
+            // Atualizar a interface com os resultados
+            if (resultadoBusca) {
+                resultadoBusca.style.display = 'flex';
+                contadorResultados.textContent = linhasFiltradas.length;
+                
+                if (termoFornecedor || termoEmail) {
+                    filtrosAplicados.style.display = 'block';
+                    
+                    if (termoFornecedor) {
+                        fornecedorBadge.textContent = `Fornecedor: "${termoFornecedor}"`;
+                        fornecedorBadge.style.display = 'inline-block';
+                    } else {
+                        fornecedorBadge.style.display = 'none';
+                    }
+                    
+                    if (termoEmail) {
+                        emailBadge.textContent = `Email: "${termoEmail}"`;
+                        emailBadge.style.display = 'inline-block';
+                    } else {
+                        emailBadge.style.display = 'none';
+                    }
+                } else {
+                    filtrosAplicados.style.display = 'none';
+                }
+            }
+            
+            // Reinicializar paginação após filtro
+            const paginacao = document.getElementById('paginacaoFornecedores');
+            if (paginacao) {
+                // Usar a função global do script.js
+            inicializarPaginacao(linhasFiltradas, paginacao, 10);
+            }
+        }
+    });
+
+    // Função genérica de páginas
+    function inicializarPaginacao(linhas, paginacao, itemsPorPagina = 10) {
+        if (!paginacao) return;
+        
+        let paginaAtual = 1;
+        
+        // Função para mostrar as linhas da página atual
+        function mostrarLinhas() {
+            // Ocultar todas as linhas
+            linhas.forEach(linha => {
+                linha.style.display = 'none';
+            });
+            
+            // Calcular índices das linhas a serem exibidas
+            const inicio = (paginaAtual - 1) * itemsPorPagina;
+            const fim = Math.min(inicio + itemsPorPagina, linhas.length);
+            
+            // Mostrar apenas as linhas da página atual
+            for (let i = inicio; i < fim; i++) {
+                if (i < linhas.length) {
+                    linhas[i].style.display = '';
+                }
+            }
+            
+            // Atualizar a páginas
+            atualizarPaginacao(linhas.length);
+        }
+        
+        // Função para atualizar os controles de páginas
+        function atualizarPaginacao(totalItens) {
+            const totalPaginas = Math.ceil(totalItens / itemsPorPagina);
+            
+            // Limpar páginas atual
+            paginacao.innerHTML = '';
+            
+            // Não mostrar páginas se tiver apenas uma página
+            if (totalPaginas <= 1) {
+                return;
+            }
+            
+            // Botão Anterior
+            const itemAnterior = document.createElement('li');
+            itemAnterior.className = `page-item ${paginaAtual === 1 ? 'disabled' : ''}`;
+            
+            const linkAnterior = document.createElement('a');
+            linkAnterior.className = 'page-link';
+            linkAnterior.href = '#';
+            linkAnterior.setAttribute('aria-label', 'Anterior');
+            linkAnterior.innerHTML = '&laquo;';
+            linkAnterior.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (paginaAtual > 1) {
+                    paginaAtual--;
+                    mostrarLinhas();
+                }
+            });
+            
+            itemAnterior.appendChild(linkAnterior);
+            paginacao.appendChild(itemAnterior);
+            
+            // Números das páginas
+            for (let i = 1; i <= totalPaginas; i++) {
+                const item = document.createElement('li');
+                item.className = `page-item ${i === paginaAtual ? 'active' : ''}`;
+                
+                const link = document.createElement('a');
+                link.className = 'page-link';
+                link.href = '#';
+                link.textContent = i;
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    paginaAtual = i;
+                    mostrarLinhas();
+                });
+                
+                item.appendChild(link);
+                paginacao.appendChild(item);
+            }
+            
+            // Botão Próximo
+            const itemProximo = document.createElement('li');
+            itemProximo.className = `page-item ${paginaAtual === totalPaginas || totalPaginas === 0 ? 'disabled' : ''}`;
+            
+            const linkProximo = document.createElement('a');
+            linkProximo.className = 'page-link';
+            linkProximo.href = '#';
+            linkProximo.setAttribute('aria-label', 'Próximo');
+            linkProximo.innerHTML = '&raquo;';
+            linkProximo.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (paginaAtual < totalPaginas) {
+                    paginaAtual++;
+                    mostrarLinhas();
+                }
+            });
+            
+            itemProximo.appendChild(linkProximo);
+            paginacao.appendChild(itemProximo);
+        }
+        
+        // Inicializar a páginas
+        mostrarLinhas();
+        
+        return {
+            atualizarPagina: mostrarLinhas
+        };
+    }
+
+    // Função ordenar tabela (estilo PRODUÇÕES)
+    function ordenarTabela(tabelaId, paginacaoId, campo) {
+        const tabela = document.getElementById(tabelaId);
+        if (!tabela) return;
+        
+        const thead = tabela.querySelector('thead');
+        const tbody = tabela.querySelector('tbody');
+        const linhas = Array.from(tbody.querySelectorAll('tr'));
+        const paginacao = document.getElementById(paginacaoId);
+        
+        // Determinar a direção da ordenação
+        const th = thead.querySelector(`th[data-sort="${campo}"]`);
+        const direcaoAtual = th.classList.contains('asc') ? 'desc' : 'asc';
+        
+        // Remover classes de ordenação de todos os cabeçalhos
+        thead.querySelectorAll('th.sortable').forEach(header => {
+            header.classList.remove('asc', 'desc');
+        });
+        
+        // Adicionar classe de ordenação ao cabeçalho atual
+        th.classList.add(direcaoAtual);
+        
+        // Mapear campos aos índices das colunas
+        const colIndexes = {};
+        thead.querySelectorAll('th.sortable').forEach((header, index) => {
+            colIndexes[header.getAttribute('data-sort')] = index;
+        });
+        
+        // Ordenar as linhas
+        linhas.sort((a, b) => {
+            const celIndex = colIndexes[campo];
+            let valorA, valorB;
+            
+            if (campo === 'data') {
+                // Extrair datas no formato DD/MM/YYYY
+                const regex = /(\d{2})\/(\d{2})\/(\d{4})/;
+                const textoA = a.cells[celIndex].textContent.trim();
+                const textoB = b.cells[celIndex].textContent.trim();
+                
+                const matchA = textoA.match(regex);
+                const matchB = textoB.match(regex);
+                
+                if (matchA && matchB) {
+                    // Criar objetos Date para comparação
+                    const dateA = new Date(
+                        parseInt(matchA[3]), // ano
+                        parseInt(matchA[2]) - 1, // mês (0-based)
+                        parseInt(matchA[1]) // dia
+                    );
+                    
+                    const dateB = new Date(
+                        parseInt(matchB[3]), // ano
+                        parseInt(matchB[2]) - 1, // mês (0-based)
+                        parseInt(matchB[1]) // dia
+                    );
+                    
+                    return direcaoAtual === 'asc' ? dateA - dateB : dateB - dateA;
+                }
+                
+                // Fallback para ordenação de texto
+                valorA = textoA;
+                valorB = textoB;
+            } else if (campo === 'quantidade' || campo === 'valor' || campo === 'id') {
+                // Ordenar numericamente
+                valorA = parseFloat(a.cells[celIndex].textContent.trim().replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+                valorB = parseFloat(b.cells[celIndex].textContent.trim().replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+                return direcaoAtual === 'asc' ? valorA - valorB : valorB - valorA;
+            } else {
+                // Ordenação de texto para outros campos
+                valorA = a.cells[celIndex].textContent.trim().toLowerCase();
+                valorB = b.cells[celIndex].textContent.trim().toLowerCase();
+            }
+            
+            // Comparação de texto (usar localeCompare para suporte a acentos)
+            return direcaoAtual === 'asc' 
+                ? valorA.localeCompare(valorB, 'pt-BR')
+                : valorB.localeCompare(valorA, 'pt-BR');
+        });
+        
+        // Remover todas as linhas da tabela
+        while (tbody.firstChild) {
+            tbody.removeChild(tbody.firstChild);
+        }
+        
+        // Adicionar as linhas reordenadas
+        linhas.forEach(linha => {
+            tbody.appendChild(linha);
+        });
+        
+        // Reiniciar paginação na primeira página
+        if (paginacao) {
+            inicializarPaginacao(linhas, paginacao, 10);
+        }
+    }
+</script>
+
+<!-- Modal de Confirmação para Excluir Fornecedor -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="confirmDeleteModalLabel"><i class="fas fa-exclamation-triangle me-2"></i>Confirmar Exclusão</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <p>Você tem certeza que deseja excluir o fornecedor <strong id="deleteFornecedorNome"></strong>?</p>
+                <p class="text-danger"><i class="fas fa-exclamation-circle"></i> Esta ação não pode ser desfeita!</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Excluir</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

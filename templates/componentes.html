@@ -1,0 +1,1335 @@
+{% extends 'base.html' %}
+
+{% block title %}Componentes - Controle de Estoque{% endblock %}
+
+{% block page_title %}<span style="font-weight: 700; color: #007bff;"><i class="fas fa-microchip me-2"></i>Componentes</span>{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex">
+    <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#modalNovoComponente">
+    <i class="fas fa-plus-circle me-1"></i>Novo Componente
+    </button>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-1"></i>Voltar
+    </a>
+</div>
+{% endblock %}
+
+{% block head_extras %}
+<style>
+    /* Estilos para a tabela de componentes */
+    #tabelaComponentes {
+        border-collapse: collapse;
+        width: 100%;
+        margin-bottom: 0;
+        min-width: 1000px; /* Garantir largura mínima para forçar rolagem quando necessário */
+    }
+
+    /* Animação de shake para campos com erro */
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+        20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+
+    #tabelaComponentes thead tr {
+        background-color: #007bff;
+        color: white;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+
+    #tabelaComponentes th,
+    #tabelaComponentes td {
+        padding: 12px 16px;
+        text-align: left;
+        border: 1px solid #e3e6f0;
+    }
+
+    #tabelaComponentes tbody tr:nth-child(even) {
+        background-color: #f8f9fc;
+    }
+
+    #tabelaComponentes tbody tr:hover {
+        background-color: #eaecf4;
+    }
+    
+    /* Estilos para os ícones de ação */
+    .text-primary, .text-danger {
+        font-size: 1.2rem;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+    
+    .text-primary:hover {
+        background-color: rgba(0, 123, 255, 0.1);
+    }
+    
+    .text-danger:hover {
+        background-color: rgba(220, 53, 69, 0.1);
+    }
+    
+    .card-container {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+        margin-bottom: 25px;
+    }
+    
+    /* Estilos para barra de rolagem */
+    .table-responsive::-webkit-scrollbar {
+        height: 8px; /* Altura da barra de rolagem horizontal */
+        display: block;
+    }
+    
+    .table-responsive::-webkit-scrollbar-thumb {
+        background-color: #c1c1c1;
+        border-radius: 4px;
+    }
+    
+    .table-responsive::-webkit-scrollbar-track {
+        background-color: #f1f1f1;
+    }
+    
+    .table-responsive {
+        -ms-overflow-style: auto; /* IE e Edge */
+        scrollbar-width: thin; /* Firefox */
+        overflow-x: auto !important; 
+        overflow-y: hidden !important;
+        max-height: none !important;
+    }
+    
+    /* Estilos para a paginação */
+    .pagination {
+        margin-bottom: 0;
+    }
+    
+    .pagination .page-item .page-link {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+        line-height: 1.25;
+        border: 1px solid #dee2e6;
+        color: #007bff;
+    }
+    
+    .pagination .page-item.active .page-link {
+        background-color: #007bff;
+        border-color: #007bff;
+        color: white;
+        font-weight: 500;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    
+    .pagination .page-item.disabled .page-link {
+        color: #6c757d;
+        background-color: #fff;
+        border-color: #dee2e6;
+    }
+    
+    .pagination .page-item:not(.active):not(.disabled) .page-link:hover {
+        background-color: #e9ecef;
+        border-color: #dee2e6;
+        color: #0056b3;
+    }
+    
+    /* Estilo para títulos de cards */
+    .card-header h5 {
+        font-weight: 700;
+    }
+
+    /* Estilo para os cabeçalhos de colunas */
+    #tabelaComponentes th {
+        font-weight: 600;
+        vertical-align: middle;
+    }
+    
+    /* Estilos para ordenação */
+    .sortable {
+        cursor: pointer;
+        position: relative;
+        padding-right: 25px !important;
+    }
+    
+    .sortable:after,
+    .sortable:before {
+        content: '';
+        position: absolute;
+        right: 10px;
+        width: 0;
+        height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        opacity: 0.3;
+        pointer-events: none;
+    }
+    
+    .sortable:before {
+        border-bottom: 5px solid #fff;
+        top: calc(50% - 8px);
+    }
+    
+    .sortable:after {
+        border-top: 5px solid #fff;
+        top: calc(50% + 1px);
+    }
+    
+    .sortable.asc:before,
+    .sortable.desc:after {
+        opacity: 1;
+    }
+    
+    /* Estilo específico para o cabeçalho de código */
+    .sortable#codigo-col {
+        padding: 12px 16px !important;
+        position: relative;
+        cursor: pointer;
+    }
+    
+    /* Estilos para indicadores de ordenação */
+    .sort-indicator {
+        display: inline-flex;
+        flex-direction: column;
+        line-height: 0.5;
+    }
+    
+    .sort-indicator i {
+        opacity: 0.3;
+        font-size: 0.8rem;
+    }
+    
+    .sort-indicator i.active {
+        opacity: 1;
+        color: white;
+    }
+    
+    .container {
+        max-width: 1200px;
+    }
+    
+    .action-icon {
+        color: #777;
+        margin-left: 8px;
+        transition: color 0.3s;
+    }
+    
+    .edit-icon:hover {
+        color: #007bff;
+    }
+    
+    .delete-icon:hover {
+        color: #dc3545;
+    }
+    
+    /* Adiciona espaço para o ícone sort */
+    th.sortable {
+        padding-right: 28px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Buscador -->
+<div class="card mb-4">
+    <div class="card-body py-3">
+        <form id="formBuscaComponentes" class="row g-2 align-items-end" action="{{ url_for('listar_componentes') }}" method="get">
+            <div class="col-md-6">
+                <label for="searchComponente" class="form-label mb-1" style="font-size: 14.4px; font-weight: bold;">Buscar por código ou nome:</label>
+                <input type="text" class="form-control" id="searchComponente" name="search" placeholder="Digite o código ou nome..." value="{{ search_query }}">
+            </div>
+            <div class="col-md-4">
+                <label for="filtroStatus" class="form-label mb-1" style="font-size: 14.4px; font-weight: bold;">Filtrar por status:</label>
+                <select class="form-select" id="filtroStatus" name="filtro">
+                    <option value="todos" {% if filtro == 'todos' %}selected{% endif %}>Todos</option>
+                    <option value="critico" {% if filtro == 'critico' %}selected{% endif %}>Crítico</option>
+                    <option value="baixo" {% if filtro == 'baixo' %}selected{% endif %}>Baixo</option>
+                    <option value="normal" {% if filtro == 'normal' %}selected{% endif %}>Normal</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search me-1"></i>Buscar
+                </button>
+            </div>
+            
+            <!-- Campo ordem oculto para manter estado atual de ordenação -->
+            <input type="hidden" name="ordem" value="{{ ordem }}">
+        </form>
+    </div>
+</div>
+
+<div class="table-container">
+    <div id="resultadoBusca" class="d-flex justify-content-between align-items-center mb-3" style="display: none;">
+        <p class="mb-0"><span id="contadorResultados"></span> Componente(s) encontrado(s)</p>
+        <p class="mb-0" id="filtrosAplicados" style="display: none;">
+            <span id="componenteBadge" class="badge bg-info" style="display: none;"></span>
+            <span id="statusBadge" class="badge bg-info ms-1" style="display: none;"></span>
+            <button id="limparFiltros" class="btn btn-sm btn-outline-secondary ms-2">Limpar filtros</button>
+        </p>
+    </div>
+    
+    <!-- Lista de Componentes -->
+    {% if componentes %}
+    <div class="card">
+        <div class="card-header bg-light">
+            <h5 class="mb-0" style="color: #007bff;"><i class="fas fa-list me-2"></i>Lista de Componentes</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="tabelaComponentes">
+                    <thead class="table-primary">
+                        <tr>
+                            <th width="15%" class="border-end sortable" id="codigo-col">
+                                <div class="d-flex align-items-center">
+                                    <span>CÓDIGO</span>
+                                    <span class="ms-2 sort-indicator">
+                                        <i class="fas fa-sort-up sort-asc {% if ordem == 'asc' %}active{% endif %}"></i>
+                                        <i class="fas fa-sort-down sort-desc {% if ordem == 'desc' %}active{% endif %}"></i>
+                                    </span>
+                                </div>
+                            </th>
+                            <th width="30%" class="border-end sortable" data-sort="nome">Nome</th>
+                            <th width="15%" class="border-end text-center sortable" data-sort="quantidade">Quantidade</th>
+                            <th width="20%" class="border-end text-center status-col">Status</th>
+                            <th width="20%" class="text-center">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for componente in componentes %}
+                <tr>
+                            <td class="border-end">{{ componente.codigo }}</td>
+                            <td class="border-end">{{ componente.nome }}</td>
+                            <td class="text-center border-end">{{ componente.quantidade }}</td>
+                            <td class="text-center border-end status-col">
+                                {% if componente.quantidade < 100 %}
+                        <span class="badge bg-danger">Crítico</span>
+                                {% elif componente.quantidade < 300 %}
+                        <span class="badge bg-warning text-dark">Baixo</span>
+                        {% else %}
+                        <span class="badge bg-success">Normal</span>
+                        {% endif %}
+                    </td>
+                            <td class="text-center">
+                                <div class="d-flex justify-content-center gap-2">
+                                    <a href="#" class="action-icon edit-icon edit-componente" data-bs-toggle="modal" data-bs-target="#modalEditarComponente" data-componente-codigo="{{ componente.codigo }}" data-componente-nome="{{ componente.nome }}" data-componente-quantidade="{{ componente.quantidade }}" title="Editar">
+                                        <i class="fa fa-edit"></i>
+                                    </a>
+                                    <a href="#" class="action-icon delete-icon delete-componente" data-componente-codigo="{{ componente.codigo }}" data-componente-nome="{{ componente.nome }}" title="Excluir">
+                                        <i class="fa fa-trash"></i>
+                                    </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+        </div>
+        <div class="card-footer bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="badge bg-primary">Total: {{ componentes|length }}</span>
+            <nav aria-label="Navegação de páginas">
+                <ul class="pagination justify-content-center mb-0" id="paginacaoComponentes">
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" aria-label="Anterior">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link" href="#">&raquo;</a></li>
+                </ul>
+            </nav>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>Nenhum componente cadastrado ainda.
+    </div>
+    {% endif %}
+</div>
+
+<!-- Ações Rápidas -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0" style="color: #007bff;">Ações Rápidas</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <a href="{{ url_for('registrar_entrada') }}" class="btn btn-success w-100 d-flex align-items-center justify-content-center gap-2 py-2 fw-medium">
+                            <i class="fas fa-arrow-down"></i>
+                            <span>Registrar Entrada</span>
+                        </a>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <a href="{{ url_for('registrar_saida') }}" class="btn btn-danger w-100 d-flex align-items-center justify-content-center gap-2 py-2 fw-medium">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>Registrar Saída</span>
+                        </a>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <a href="{{ url_for('listar_transacoes') }}" class="btn btn-info w-100 d-flex align-items-center justify-content-center gap-2 py-2 fw-medium text-white">
+                            <i class="fas fa-history"></i>
+                            <span>Ver Histórico</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Novo Componente -->
+<div class="modal fade" id="modalNovoComponente" tabindex="-1" aria-labelledby="modalNovoComponenteLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalNovoComponenteLabel"><i class="fas fa-plus-circle me-2"></i>Novo Componente</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-alert-container"></div>
+                <form id="formNovoComponente" onsubmit="event.preventDefault(); salvarNovoComponente();">
+                    <div class="mb-3">
+                        <label for="codigo" class="form-label">Código</label>
+                        <input type="text" class="form-control" id="codigo" name="codigo" required inputmode="numeric" pattern="[0-9]*" onkeypress="return event.charCode >= 48 && event.charCode <= 57">
+                        <small class="form-text text-muted">Apenas números são permitidos.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="nome" class="form-label">Nome do Componente</label>
+                        <input type="text" class="form-control" id="nome" name="nome" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="quantidade" class="form-label">Quantidade Inicial</label>
+                        <input type="number" class="form-control" id="quantidade" name="quantidade" value="0" min="0">
+                    </div>
+                    <div class="d-none">
+                        <button type="submit" id="submitNovoComponente"></button>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnSalvarComponente">Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Editar Componente -->
+<div class="modal fade" id="modalEditarComponente" tabindex="-1" aria-labelledby="modalEditarComponenteLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalEditarComponenteLabel"><i class="fas fa-edit me-2"></i>Editar Componente</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEditarComponente" onsubmit="event.preventDefault();" novalidate>
+                    <input type="hidden" id="editComponenteCodigoOriginal">
+                    <input type="hidden" id="editQuantidadeOriginal">
+                    <div class="mb-3">
+                        <label for="editCodigo" class="form-label">Código</label>
+                        <input type="text" class="form-control" id="editCodigo" name="editCodigo" required 
+                               onkeydown="if(event.key === 'Enter') { event.preventDefault(); return false; }"
+                               inputmode="numeric" pattern="[0-9]*" onkeypress="return event.charCode >= 48 && event.charCode <= 57">
+                        <small class="form-text text-muted">Apenas números são permitidos.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editNome" class="form-label">Nome do Componente</label>
+                        <input type="text" class="form-control" id="editNome" name="editNome" required
+                               onkeydown="if(event.key === 'Enter') { event.preventDefault(); return false; }">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editQuantidade" class="form-label">Quantidade</label>
+                        <input type="number" class="form-control" id="editQuantidade" name="editQuantidade" min="0" required
+                               onkeydown="if(event.key === 'Enter') { event.preventDefault(); return false; }">
+                    </div>
+                    <div id="alertaConfirmacao" class="alert alert-warning" style="display: none;">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <span id="mensagemConfirmacao"></span>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnAtualizarComponente">Atualizar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmação para Alterar Código ou Quantidade -->
+<div class="modal fade" id="confirmAlteracaoModal" tabindex="-1" aria-labelledby="confirmAlteracaoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="confirmAlteracaoModalLabel"><i class="fas fa-exclamation-triangle me-2"></i>Confirmar Alteração</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <p id="mensagemConfirmacaoModal"></p>
+                <p class="text-warning"><i class="fas fa-exclamation-circle"></i> Esta alteração pode afetar produtos e histórico de transações.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-warning" id="confirmAlteracaoBtn">Confirmar Alteração</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmação para Excluir Componente -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="confirmDeleteModalLabel"><i class="fas fa-exclamation-triangle me-2"></i>Confirmar Exclusão</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <p>Você tem certeza que deseja excluir o componente <strong id="deleteComponenteNome"></strong>?</p>
+                <p class="text-danger"><i class="fas fa-exclamation-circle"></i> Esta ação não pode ser desfeita!</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Excluir</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Verificar se há componente adicionado no sessionStorage
+        if (sessionStorage.getItem('component_added') === 'true') {
+            // Limpar o flag imediatamente
+            sessionStorage.removeItem('component_added');
+            
+            // Criar alerta de sucesso
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show';
+            alertDiv.role = 'alert';
+            alertDiv.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i> Componente adicionado com sucesso!
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+            `;
+            
+            // Inserir no início da página
+            const container = document.querySelector('.container') || document.querySelector('.table-container');
+            if (container) {
+                // Inserir antes de qualquer alerta existente ou como primeiro filho
+                const existingAlert = container.querySelector('.alert');
+                if (existingAlert) {
+                    container.insertBefore(alertDiv, existingAlert);
+                } else {
+                    container.insertBefore(alertDiv, container.firstChild);
+                }
+                
+                // Configurar para esconder automaticamente após 5 segundos
+                setTimeout(() => {
+                    try {
+                        const bsAlert = new bootstrap.Alert(alertDiv);
+                        bsAlert.close();
+                    } catch (e) {
+                        // Fallback se o bootstrap Alert não estiver disponível
+                        alertDiv.style.display = 'none';
+                    }
+                }, 5000);
+            }
+        }
+
+        // Verificar se há parâmetro para abrir modal na URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const openModal = urlParams.get('open_modal');
+        
+        if (openModal === 'novo_componente') {
+            // Abrir o modal de novo componente
+            const modalNovoComponente = new bootstrap.Modal(document.getElementById('modalNovoComponente'));
+            modalNovoComponente.show();
+            
+            // Remover o parâmetro da URL para evitar que o modal abra novamente ao recarregar
+            history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        // Verificar se há parâmetro de sucesso na URL (abordagem alternativa)
+        const success = urlParams.get('success');
+        const action = urlParams.get('action');
+        
+        // Exibir mensagem de sucesso se necessário
+        if (success === 'true') {
+            let message = '';
+            if (action === 'add') {
+                message = 'Componente adicionado com sucesso!';
+            } else if (action === 'edit') {
+                message = 'Componente atualizado com sucesso!';
+            } else if (action === 'delete') {
+                message = 'Componente excluído com sucesso!';
+            }
+            
+            if (message) {
+                // Criar alerta de sucesso
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                alertDiv.role = 'alert';
+                alertDiv.innerHTML = `
+                    <i class="fas fa-check-circle me-2"></i> ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+                `;
+                
+                // Inserir no início da página
+                const container = document.querySelector('.container') || document.querySelector('.table-container');
+                if (container) {
+                    container.insertBefore(alertDiv, container.firstChild);
+                    
+                    // Configurar para remover a mensagem da URL após exibir
+                    history.replaceState({}, document.title, window.location.pathname);
+                    
+                    // Configurar para esconder automaticamente após 5 segundos
+                    setTimeout(() => {
+                        const bsAlert = new bootstrap.Alert(alertDiv);
+                        bsAlert.close();
+                    }, 5000);
+                }
+            }
+        }
+        
+        // Definindo variáveis globais para paginação
+        let paginaAtual = 1;
+        const itemsPorPagina = 10;
+        
+        // Restaurar a posição de rolagem salva, se existir
+        if (performance.navigation.type === 1 && localStorage.getItem('scrollPosition')) {
+            window.scrollTo(0, parseInt(localStorage.getItem('scrollPosition')));
+            
+            // Limpar após restaurar para não afetar outras navegações
+            // Mas espere um pouco para garantir que a rolagem foi aplicada
+            setTimeout(() => {
+                localStorage.removeItem('scrollPosition');
+            }, 500);
+        }
+        
+        // Adicionar funcionalidade de ordenação à coluna de código
+        const codigoColHeader = document.getElementById('codigo-col');
+        if (codigoColHeader) {
+            // Definir a ordem atual com base no parâmetro da URL
+            const url = new URL(window.location.href);
+            let ordemAtual = url.searchParams.get('ordem') || 'asc';
+            
+            codigoColHeader.addEventListener('click', function() {
+                // Salvar a posição de rolagem atual
+                localStorage.setItem('scrollPosition', window.pageYOffset);
+                
+                // Inverter a ordem
+                const novaOrdem = ordemAtual === 'asc' ? 'desc' : 'asc';
+                
+                // Construir a URL com os parâmetros existentes
+                const novaUrl = new URL(window.location.href);
+                novaUrl.searchParams.set('ordem', novaOrdem);
+                
+                // Preservar parâmetros de busca e filtro
+                const search = document.getElementById('searchComponente');
+                if (search && search.value) {
+                    novaUrl.searchParams.set('search', search.value);
+                }
+                
+                const filtro = document.getElementById('filtroStatus');
+                if (filtro && filtro.value) {
+                    novaUrl.searchParams.set('filtro', filtro.value);
+                }
+                
+                // Redirecionar para a nova URL
+                window.location.href = novaUrl.toString();
+            });
+        }
+        
+        // Inicializar a ordenação de tabela para as outras colunas
+        inicializarOrdenacaoTabela();
+        
+        // Aplicar a paginação inicial para mostrar apenas 10 itens por página
+        const tabelaComponentes = document.getElementById('tabelaComponentes');
+        if (tabelaComponentes) {
+            const linhas = Array.from(tabelaComponentes.querySelectorAll('tbody tr'));
+            const paginacao = document.getElementById('paginacaoComponentes');
+            
+            // Limitar a exibição inicial a 10 itens
+            if (linhas.length > itemsPorPagina) {
+                linhas.forEach((linha, index) => {
+                    if (index >= itemsPorPagina) {
+                        linha.style.display = 'none';
+                    }
+                });
+            }
+            
+            if (linhas.length > 0 && paginacao) {
+                inicializarPaginacao(linhas, paginacao, itemsPorPagina);
+            }
+        }
+        
+        // Configurar o botão de limpar filtros
+        const btnLimparFiltros = document.getElementById('limparFiltros');
+        if (btnLimparFiltros) {
+            btnLimparFiltros.addEventListener('click', function() {
+                // Limpar o campo de busca
+                const searchInput = document.getElementById('searchComponente');
+                if (searchInput) searchInput.value = '';
+                
+                // Resetar o filtro de status para "todos"
+                const filtroStatus = document.getElementById('filtroStatus');
+                if (filtroStatus) filtroStatus.value = 'todos';
+                
+                // Aplicar o filtro limpo
+                filtrarComponentes('', 'todos');
+                
+                // Redirecionar para a página sem parâmetros
+                window.location.href = '{{ url_for("listar_componentes") }}';
+            });
+        }
+        
+        // Configurar os inputs de filtro para aplicação em tempo real
+        const searchInput = document.getElementById('searchComponente');
+        const filtroStatus = document.getElementById('filtroStatus');
+        
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                const termo = this.value.toLowerCase();
+                const status = filtroStatus ? filtroStatus.value : 'todos';
+                filtrarComponentes(termo, status);
+            });
+        }
+        
+        if (filtroStatus) {
+            filtroStatus.addEventListener('change', function() {
+                const termo = searchInput ? searchInput.value.toLowerCase() : '';
+                const status = this.value;
+                filtrarComponentes(termo, status);
+            });
+        }
+        
+        // Inicializar filtros com os valores atuais
+        if (searchInput || filtroStatus) {
+            const termo = searchInput ? searchInput.value.toLowerCase() : '';
+            const status = filtroStatus ? filtroStatus.value : 'todos';
+            filtrarComponentes(termo, status);
+        }
+        
+        // Garantir que o campo oculto de ordem tenha um valor válido
+        const ordemField = document.querySelector('input[name="ordem"]');
+        if (ordemField && !ordemField.value) {
+            ordemField.value = 'asc';
+        }
+        
+        // Restrict component code inputs to numbers only
+        const codigoInput = document.getElementById('codigo');
+        const editCodigoInput = document.getElementById('editCodigo');
+        
+        // Helper function to validate numeric input
+        function validateNumericInput(input) {
+            input.addEventListener('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '');
+            });
+            
+            input.addEventListener('paste', function(e) {
+                    e.preventDefault();
+                const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                const numericValue = pastedText.replace(/[^0-9]/g, '');
+                this.value = numericValue;
+            });
+        }
+        
+        // Apply validation to both code inputs
+        if (codigoInput) {
+            validateNumericInput(codigoInput);
+            
+            // Clear error styling on input
+            codigoInput.addEventListener('input', function() {
+                this.classList.remove('is-invalid', 'border-danger');
+                document.getElementById('modal-alert-container').innerHTML = '';
+            });
+            
+            // Clear error styling on focus
+            codigoInput.addEventListener('focus', function() {
+                this.classList.remove('is-invalid', 'border-danger');
+                document.getElementById('modal-alert-container').innerHTML = '';
+            });
+        }
+        
+        const nomeInput = document.getElementById('nome');
+        if (nomeInput) {
+            // Clear error styling on input
+            nomeInput.addEventListener('input', function() {
+                this.classList.remove('is-invalid', 'border-danger');
+                document.getElementById('modal-alert-container').innerHTML = '';
+            });
+            
+            // Clear error styling on focus
+            nomeInput.addEventListener('focus', function() {
+                this.classList.remove('is-invalid', 'border-danger');
+                document.getElementById('modal-alert-container').innerHTML = '';
+                });
+            }
+            
+            // Event listeners para os botões de excluir componente
+            document.querySelectorAll('.delete-componente').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const codigo = this.getAttribute('data-componente-codigo');
+                    const nome = this.getAttribute('data-componente-nome');
+                    
+                    document.getElementById('deleteComponenteNome').textContent = nome;
+                    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+                    
+                    confirmDeleteBtn.setAttribute('data-componente-codigo', codigo);
+                    
+                    // Abrir o modal de confirmação
+                    const modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+                    modal.show();
+                });
+            });
+            
+            // Event listener para o botão de confirmar exclusão
+            const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+            if (confirmDeleteBtn) {
+                confirmDeleteBtn.addEventListener('click', function() {
+                    const codigo = this.getAttribute('data-componente-codigo');
+                    // Aqui você redirecionaria para a rota de exclusão
+                    window.location.href = `/excluir_componente/${codigo}`;
+                });
+            }
+            
+            // Event listeners para os botões de editar componente
+            document.querySelectorAll('.edit-componente').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const codigo = this.getAttribute('data-componente-codigo');
+                    const nome = this.getAttribute('data-componente-nome');
+                    const quantidade = this.getAttribute('data-componente-quantidade');
+                    
+                    document.getElementById('editComponenteCodigoOriginal').value = codigo;
+                    document.getElementById('editQuantidadeOriginal').value = quantidade;
+                    document.getElementById('editCodigo').value = codigo;
+                    document.getElementById('editNome').value = nome;
+                    document.getElementById('editQuantidade').value = quantidade;
+                });
+            });
+            
+            // Event listener para o botão de atualizar componente
+            const btnAtualizarComponente = document.getElementById('btnAtualizarComponente');
+            if (btnAtualizarComponente) {
+                btnAtualizarComponente.addEventListener('click', verificarEAtualizar);
+            }
+            
+            // Função para verificar alterações antes de atualizar
+            async function verificarEAtualizar() {
+                const codigoOriginal = document.getElementById('editComponenteCodigoOriginal').value;
+                const quantidadeOriginal = document.getElementById('editQuantidadeOriginal').value;
+                const codigo = document.getElementById('editCodigo').value.trim();
+                const nome = document.getElementById('editNome').value.trim();
+                const quantidade = document.getElementById('editQuantidade').value;
+                
+                if (!codigo || !nome || !quantidade) {
+                    alert('Por favor, preencha todos os campos obrigatórios.');
+                    return;
+                }
+                
+                // Verificar se o código contém apenas números
+                if (!/^\d+$/.test(codigo)) {
+                    alert('O código deve conter apenas números.');
+                    return;
+                }
+                
+                const codigoAlterado = codigo !== codigoOriginal;
+                const quantidadeAlterada = parseInt(quantidade) !== parseInt(quantidadeOriginal);
+                
+                // Verificar se o código ou nome já existem (apenas se foram alterados)
+                if (codigoAlterado) {
+                    try {
+                        const respCodigo = await fetch(`/api/check_code?code=${encodeURIComponent(codigo)}`);
+                        const dataCodigo = await respCodigo.json();
+                        
+                        if (!dataCodigo.available) {
+                            alert(`O código '${codigo}' já está sendo utilizado por outro componente.`);
+                            return;
+                        }
+                    } catch (error) {
+                        console.error('Erro ao verificar código:', error);
+                        alert('Ocorreu um erro ao verificar o código. Por favor, tente novamente.');
+                        return;
+                    }
+                }
+                
+                // Verificar o nome apenas se foi alterado
+                if (nome.toLowerCase() !== document.querySelector(`[data-componente-codigo="${codigoOriginal}"]`).getAttribute('data-componente-nome').toLowerCase()) {
+                    try {
+                        const respNome = await fetch(`/api/check_name?name=${encodeURIComponent(nome)}`);
+                        const dataNome = await respNome.json();
+                        
+                        if (!dataNome.available) {
+                            alert(`O nome '${nome}' já está sendo utilizado por outro componente.`);
+                            return;
+                        }
+                    } catch (error) {
+                        console.error('Erro ao verificar nome:', error);
+                        alert('Ocorreu um erro ao verificar o nome. Por favor, tente novamente.');
+                        return;
+                    }
+                }
+                
+                if (codigoAlterado || quantidadeAlterada) {
+                    let mensagem = '';
+                    
+                    if (codigoAlterado && quantidadeAlterada) {
+                        mensagem = `Você está alterando o código de "${codigoOriginal}" para "${codigo}" e a quantidade de ${quantidadeOriginal} para ${quantidade}.`;
+                    } else if (codigoAlterado) {
+                        mensagem = `Você está alterando o código de "${codigoOriginal}" para "${codigo}".`;
+                    } else {
+                        mensagem = `Você está alterando a quantidade de ${quantidadeOriginal} para ${quantidade}.`;
+                    }
+                    
+                    document.getElementById('mensagemConfirmacaoModal').textContent = mensagem;
+                    
+                    // Mostrar modal de confirmação
+                    const modal = new bootstrap.Modal(document.getElementById('confirmAlteracaoModal'));
+                    modal.show();
+                    
+                    // Configurar botão de confirmação
+                    document.getElementById('confirmAlteracaoBtn').onclick = function() {
+                        // Redirecionar para a rota de atualização após confirmação
+                        window.location.href = `/atualizar_componente/${encodeURIComponent(codigoOriginal)}/${encodeURIComponent(codigo)}/${encodeURIComponent(nome)}/${quantidade}`;
+                        modal.hide();
+                    };
+                } else {
+                    // Se não houver alterações nos campos sensíveis, prosseguir direto
+                    window.location.href = `/atualizar_componente/${encodeURIComponent(codigoOriginal)}/${encodeURIComponent(codigo)}/${encodeURIComponent(nome)}/${quantidade}`;
+                }
+            }
+            
+        // Adicionar função para inicializar a ordenação de tabela
+        function inicializarOrdenacaoTabela() {
+            // Adicionar nova funcionalidade de ordenação às colunas com data-sort
+            const thSortables = document.querySelectorAll('#tabelaComponentes th.sortable[data-sort]');
+            thSortables.forEach(th => {
+                th.addEventListener('click', function() {
+                    // Salvar a posição de rolagem antes de ordenar
+                    localStorage.setItem('scrollPosition', window.pageYOffset);
+                    
+                    const campo = this.getAttribute('data-sort');
+                    ordenarTabela(campo);
+                    
+                    // Após ordenar localmente, restaurar a posição de rolagem
+                    setTimeout(() => {
+                        if (localStorage.getItem('scrollPosition')) {
+                            window.scrollTo(0, parseInt(localStorage.getItem('scrollPosition')));
+                        }
+                    }, 100);
+                });
+            });
+        }
+
+        // Função para ordenar tabela localmente
+        function ordenarTabela(campo) {
+            // Não ordenar a coluna de código localmente, pois é feito pelo servidor
+            if (campo === 'codigo') return;
+            
+            const tabela = document.getElementById('tabelaComponentes');
+            const thead = tabela.querySelector('thead');
+            const tbody = tabela.querySelector('tbody');
+            const linhas = Array.from(tbody.querySelectorAll('tr'));
+            
+            // Determinar a direção da ordenação
+            const th = thead.querySelector(`th[data-sort="${campo}"]`);
+            const direcaoAtual = th.classList.contains('asc') ? 'desc' : 'asc';
+            
+            // Remover classes de ordenação de todos os cabeçalhos locais
+            thead.querySelectorAll('th.sortable[data-sort]').forEach(header => {
+                if (header.getAttribute('data-sort') !== 'codigo') {
+                    header.classList.remove('asc', 'desc');
+                }
+            });
+            
+            // Adicionar classe de ordenação ao cabeçalho atual
+            th.classList.add(direcaoAtual);
+            
+            // Ordenar as linhas
+            linhas.sort((a, b) => {
+                let valorA, valorB;
+                
+                if (campo === 'nome') {
+                    valorA = a.cells[1].textContent.trim();
+                    valorB = b.cells[1].textContent.trim();
+                    
+                    // Comparação de string (usando collator para suporte a acentos)
+                    return direcaoAtual === 'asc' 
+                        ? valorA.localeCompare(valorB, 'pt-BR')
+                        : valorB.localeCompare(valorA, 'pt-BR');
+                } else if (campo === 'quantidade') {
+                    valorA = parseInt(a.cells[2].textContent.trim(), 10) || 0;
+                    valorB = parseInt(b.cells[2].textContent.trim(), 10) || 0;
+                    return direcaoAtual === 'asc' ? valorA - valorB : valorB - valorA;
+                }
+                
+                return 0;
+            });
+            
+            // Remover todas as linhas da tabela
+            while (tbody.firstChild) {
+                tbody.removeChild(tbody.firstChild);
+            }
+            
+            // Adicionar as linhas reordenadas
+                    linhas.forEach(linha => {
+                tbody.appendChild(linha);
+                    });
+                    
+            // Aplicar a paginação nas linhas reordenadas
+                    paginaAtual = 1;
+            inicializarPaginacao(linhas, document.getElementById('paginacaoComponentes'), itemsPorPagina);
+        }
+        
+        // Função para inicializar a paginação
+        function inicializarPaginacao(linhas, paginacao, itemsPorPagina) {
+        // Função para mostrar as linhas da página atual
+        function mostrarLinhas() {
+            // Ocultar todas as linhas
+            linhas.forEach(linha => {
+                linha.style.display = 'none';
+            });
+                
+                // Verificar se há linhas para exibir
+                if (linhas.length === 0) {
+                    // Se não houver linhas, atualizar a paginação com 0 itens
+                    atualizarPaginacao(0);
+                    return;
+                }
+            
+            // Calcular índices das linhas a serem exibidas
+            const inicio = (paginaAtual - 1) * itemsPorPagina;
+            const fim = Math.min(inicio + itemsPorPagina, linhas.length);
+            
+            // Mostrar apenas as linhas da página atual
+            for (let i = inicio; i < fim; i++) {
+                linhas[i].style.display = '';
+            }
+            
+            // Atualizar a paginação
+            atualizarPaginacao(linhas.length);
+        }
+        
+        // Função para atualizar os controles de paginação
+        function atualizarPaginacao(totalItens) {
+            const totalPaginas = Math.ceil(totalItens / itemsPorPagina);
+            
+            // Limpar paginação atual
+            paginacao.innerHTML = '';
+            
+            // Botão Anterior
+            const itemAnterior = document.createElement('li');
+            itemAnterior.className = `page-item ${paginaAtual === 1 ? 'disabled' : ''}`;
+            
+            const linkAnterior = document.createElement('a');
+            linkAnterior.className = 'page-link';
+            linkAnterior.href = '#';
+            linkAnterior.innerHTML = '&laquo;';
+            linkAnterior.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (paginaAtual > 1) {
+                    paginaAtual--;
+                    mostrarLinhas();
+                }
+            });
+            
+            itemAnterior.appendChild(linkAnterior);
+            paginacao.appendChild(itemAnterior);
+            
+            // Números das páginas
+            for (let i = 1; i <= totalPaginas; i++) {
+                const item = document.createElement('li');
+                item.className = `page-item ${i === paginaAtual ? 'active' : ''}`;
+                
+                const link = document.createElement('a');
+                link.className = 'page-link';
+                link.href = '#';
+                link.textContent = i;
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    paginaAtual = i;
+                    mostrarLinhas();
+                });
+                
+                item.appendChild(link);
+                paginacao.appendChild(item);
+            }
+            
+            // Botão Próximo
+            const itemProximo = document.createElement('li');
+            itemProximo.className = `page-item ${paginaAtual === totalPaginas || totalPaginas === 0 ? 'disabled' : ''}`;
+            
+            const linkProximo = document.createElement('a');
+            linkProximo.className = 'page-link';
+            linkProximo.href = '#';
+            linkProximo.innerHTML = '&raquo;';
+            linkProximo.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (paginaAtual < totalPaginas) {
+                    paginaAtual++;
+                    mostrarLinhas();
+                }
+            });
+            
+            itemProximo.appendChild(linkProximo);
+            paginacao.appendChild(itemProximo);
+        }
+        
+        // Inicializar a paginação
+        mostrarLinhas();
+        }
+        
+        // Função para filtrar componentes na tabela
+        function filtrarComponentes(termoComponente, filtroStatus) {
+            const tabela = document.getElementById('tabelaComponentes');
+            const resultadoBusca = document.getElementById('resultadoBusca');
+            const contadorResultados = document.getElementById('contadorResultados');
+            const filtrosAplicados = document.getElementById('filtrosAplicados');
+            const componenteBadge = document.getElementById('componenteBadge');
+            const statusBadge = document.getElementById('statusBadge');
+            
+            if (!tabela) return;
+            
+            const linhas = tabela.querySelectorAll('tbody tr');
+            let contadorVisivel = 0;
+            
+            linhas.forEach(linha => {
+                const codigo = linha.querySelector('td:nth-child(1)').textContent.toLowerCase();
+                const nome = linha.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                const status = linha.querySelector('td:nth-child(4) .badge').textContent.toLowerCase();
+                
+                const matchComponente = termoComponente === '' || 
+                                      codigo.includes(termoComponente) || 
+                                      nome.includes(termoComponente);
+                
+                const matchStatus = filtroStatus === 'todos' || 
+                                   (filtroStatus === 'critico' && status === 'crítico') ||
+                                   (filtroStatus === 'baixo' && status === 'baixo') ||
+                                   (filtroStatus === 'normal' && status === 'normal');
+                
+                if (matchComponente && matchStatus) {
+                    linha.style.display = '';
+                    contadorVisivel++;
+                } else {
+                    linha.style.display = 'none';
+                }
+            });
+            
+            // Atualizar o contador e mostrar os filtros aplicados
+            if (resultadoBusca) {
+                resultadoBusca.style.display = 'flex';
+                contadorResultados.textContent = contadorVisivel;
+                
+                // Mostrar mensagem quando não há resultados
+                if (contadorVisivel === 0) {
+                    // Verificar se já existe a mensagem de "nenhum resultado"
+                    let msgNenhumResultado = document.getElementById('msgNenhumResultado');
+                    
+                    if (!msgNenhumResultado) {
+                        // Criar mensagem de nenhum resultado
+                        msgNenhumResultado = document.createElement('div');
+                        msgNenhumResultado.id = 'msgNenhumResultado';
+                        msgNenhumResultado.className = 'alert alert-warning mt-3';
+                        msgNenhumResultado.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Nenhum componente encontrado com os critérios selecionados.';
+                        
+                        // Inserir após a tabela
+                        tabela.parentNode.insertBefore(msgNenhumResultado, tabela.nextSibling);
+                    } else {
+                        msgNenhumResultado.style.display = 'block';
+                    }
+                    
+                    // Esconder a tabela quando não há resultados
+                    tabela.style.display = 'none';
+                } else {
+                    // Se existir, remover a mensagem de "nenhum resultado"
+                    const msgNenhumResultado = document.getElementById('msgNenhumResultado');
+                    if (msgNenhumResultado) {
+                        msgNenhumResultado.style.display = 'none';
+                    }
+                    
+                    // Mostrar a tabela quando há resultados
+                    tabela.style.display = 'table';
+                }
+                
+                // Mostrar os filtros aplicados
+                let filtersApplied = false;
+                
+                if (termoComponente) {
+                    componenteBadge.textContent = `Termo: "${termoComponente}"`;
+                    componenteBadge.style.display = 'inline';
+                    filtersApplied = true;
+                } else {
+                    componenteBadge.style.display = 'none';
+                }
+                
+                if (filtroStatus !== 'todos') {
+                    const statusNames = {
+                        'critico': 'Crítico',
+                        'baixo': 'Baixo',
+                        'normal': 'Normal'
+                    };
+                    statusBadge.textContent = `Status: "${statusNames[filtroStatus]}"`;
+                    statusBadge.style.display = 'inline';
+                    filtersApplied = true;
+                } else {
+                    statusBadge.style.display = 'none';
+                }
+                
+                filtrosAplicados.style.display = filtersApplied ? 'block' : 'none';
+            }
+            
+            // Reinicializar a paginação com as linhas visíveis
+            const linhasVisiveis = Array.from(linhas).filter(linha => linha.style.display !== 'none');
+            const paginacao = document.getElementById('paginacaoComponentes');
+            
+            // Reiniciar a página atual
+            paginaAtual = 1;
+            inicializarPaginacao(linhasVisiveis, paginacao, itemsPorPagina);
+        }
+        
+        // Configurar o botão de salvar no modal
+        const btnSalvarComponente = document.getElementById('btnSalvarComponente');
+        if (btnSalvarComponente) {
+            btnSalvarComponente.addEventListener('click', function() {
+                salvarNovoComponente();
+            });
+        }
+        
+        // Adicionar listener para tecla Enter no modal de componentes
+        const modalNovoComponente = document.getElementById('modalNovoComponente');
+        if (modalNovoComponente) {
+            modalNovoComponente.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    salvarNovoComponente();
+                }
+            });
+        }
+        
+        function salvarNovoComponente() {
+            const codigo = document.getElementById('codigo').value;
+            const nome = document.getElementById('nome').value;
+            const quantidade = document.getElementById('quantidade').value;
+            const modalAlertContainer = document.getElementById('modal-alert-container');
+            
+            if (!codigo || !nome) {
+                if (!codigo) {
+                    applyErrorAnimation(document.getElementById('codigo'));
+                }
+                if (!nome) {
+                    applyErrorAnimation(document.getElementById('nome'));
+                }
+                
+                modalAlertContainer.innerHTML = '';
+                return;
+            }
+            
+            // Verificar se o código já existe
+            fetch(`/api/check_code?code=${encodeURIComponent(codigo)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.available) {
+                        // Código já existe
+                        const codigoInput = document.getElementById('codigo');
+                        applyErrorAnimation(codigoInput);
+                        
+                        modalAlertContainer.innerHTML = '';
+                        return;
+                    }
+                    
+                    // Se o código está disponível, verificar o nome
+                    return fetch(`/api/check_name?name=${encodeURIComponent(nome)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (!data.available) {
+                                // Nome já existe
+                                const nomeInput = document.getElementById('nome');
+                                applyErrorAnimation(nomeInput);
+                                
+                                modalAlertContainer.innerHTML = '';
+                                return;
+                            }
+                            
+                            // Se ambos estão disponíveis, enviar o formulário
+                            submitComponentForm(codigo, nome, quantidade);
+                        });
+                })
+                .catch(error => {
+                    console.error('Erro ao verificar componente:', error);
+                    modalAlertContainer.innerHTML = '';
+                });
+        }
+        
+        // Função para aplicar animação de erro e destacar campo
+        function applyErrorAnimation(inputElement) {
+            inputElement.classList.add('is-invalid', 'border-danger');
+            inputElement.style.animation = 'shake 0.5s';
+            
+            // Remover a animação após ela completar
+            setTimeout(() => {
+                inputElement.style.animation = '';
+            }, 500);
+            
+            // Focar no campo
+            inputElement.focus();
+        }
+        
+        // Função para enviar o formulário após validação
+        function submitComponentForm(codigo, nome, quantidade) {
+            // Verificar se o formulário existe ou criar um novo
+            let form = document.getElementById('formNovoComponente');
+            if (!form) {
+                form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/componentes/adicionar';
+                document.body.appendChild(form);
+            }
+            
+            // Definir os dados do formulário usando FormData
+            const formData = new FormData();
+            formData.append('codigo', codigo);
+            formData.append('nome', nome);
+            formData.append('quantidade', quantidade);
+            formData.append('from_modal', 'true');
+            
+            // Enviar com fetch
+            fetch('/componentes/adicionar', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.redirected) {
+                    sessionStorage.setItem('component_added', 'true');
+                    window.location.href = response.url;
+                } else {
+                    return response.text();
+                }
+            })
+            .then(html => {
+                if (html) {
+                    if (html.includes('danger')) {
+                        const modalAlertContainer = document.getElementById('modal-alert-container');
+                        modalAlertContainer.innerHTML = '';
+                    } else {
+                        sessionStorage.setItem('component_added', 'true');
+                        window.location.href = '/componentes';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao salvar:', error);
+                const modalAlertContainer = document.getElementById('modal-alert-container');
+                modalAlertContainer.innerHTML = '';
+            });
+        }
+    });
+</script>
+{% endblock %}

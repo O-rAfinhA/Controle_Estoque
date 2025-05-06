@@ -1,0 +1,326 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Produto - Controle de Estoque{% endblock %}
+
+{% block page_title %}<span style="font-weight: 700;">Editar Produto</span>{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('listar_produtos') }}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left me-1"></i>Voltar
+</a>
+{% endblock %}
+
+{% block head_extras %}
+<style>
+    .componente-item {
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        padding: 5px 8px;
+        margin-bottom: 6px;
+        position: relative;
+        border: 1px solid #dee2e6;
+        height: 62px; /* Aumentei a altura para garantir que todo conteúdo seja visível */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    .remove-componente {
+        position: absolute;
+        top: 2px;
+        right: 4px;
+        cursor: pointer;
+        color: #dc3545;
+        font-size: 0.9rem;
+    }
+    .componente-quantidade {
+        width: 80px;
+    }
+    .componente-label {
+        font-size: 0.75rem;
+        margin-bottom: 0.1rem;
+        font-weight: 500;
+    }
+    .componente-row {
+        margin: 0 -2px;
+        display: flex;
+        align-items: center;
+    }
+    .componente-row .col-md-6,
+    .componente-row .col-md-5 {
+        padding: 0 2px;
+    }
+    .componentes-title {
+        margin-top: 8px;
+        margin-bottom: 4px;
+        padding-bottom: 2px;
+        border-bottom: 1px solid #eee;
+        font-size: 0.95rem;
+        font-weight: 600;
+    }
+    #add-componente-container {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 6px;
+        margin-bottom: 8px;
+    }
+    .form-control, .form-select {
+        padding: .2rem .4rem;
+        font-size: 0.85rem;
+        min-height: auto;
+    }
+    .mb-2 {
+        margin-bottom: 0.4rem !important;
+    }
+    .mb-1 {
+        margin-bottom: 0.25rem !important;
+    }
+    .row {
+        --bs-gutter-y: 0.4rem;
+    }
+    .form-label {
+        margin-bottom: 0.2rem;
+        font-size: 0.85rem;
+    }
+    .btn-sm {
+        padding: 0.2rem 0.5rem;
+        font-size: 0.8rem;
+    }
+    /* Ajuste para exibir exatamente 5 itens na lista de componentes */
+    #componentes-container {
+        /* Altura ajustada para exibir exatamente 5 itens completos */
+        height: 370px; /* Aumentei para acomodar melhor os itens mais altos */
+        overflow-y: auto;
+        border: 1px solid #f0f0f0;
+        border-radius: 4px;
+        padding: 6px;
+        margin-bottom: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-header py-1 px-2">
+        <h5 class="mb-0" style="font-size: 1rem; font-weight: 700;">Detalhes do Produto</h5>
+    </div>
+    <div class="card-body p-2">
+        <form id="produtoForm" method="post" action="{{ url_for('editar_produto', id=produto.id) }}">
+            <div class="row g-1 mb-2">
+                <div class="col-md-6">
+                    <label for="nome" class="form-label" style="font-weight: 700;">Nome do Produto</label>
+                    <input type="text" class="form-control" id="nome" name="nome" value="{{ produto.nome }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="descricao" class="form-label" style="font-weight: 700;">Cliente</label>
+                    <input type="text" class="form-control" id="descricao" name="descricao" value="{{ produto.descricao or '' }}">
+                </div>
+            </div>
+            
+            <!-- Formulário para adicionar componentes (agora no topo) -->
+            <h5 class="componentes-title">Adicionar Componente</h5>
+            <div id="add-componente-container">
+                <div class="row g-1">
+                    <div class="col-md-6 mb-1">
+                        <label class="componente-label">Componente</label>
+                        <select class="form-select" id="componente-select">
+                            <option value="">Selecione um componente</option>
+                            {% for componente in componentes %}
+                            <option value="{{ componente.codigo }}">{{ componente.nome }} ({{ componente.codigo }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-1">
+                        <label class="componente-label">Quantidade</label>
+                        <input type="number" class="form-control" id="componente-quantidade" min="1" value="1">
+                    </div>
+                    <div class="col-md-3 mb-1">
+                        <label class="componente-label">&nbsp;</label>
+                        <button type="button" id="addComponente" class="btn btn-success btn-sm w-100">
+                            <i class="fas fa-plus-circle me-1"></i>Adicionar
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <h5 class="componentes-title">Componentes do Produto</h5>
+            <div id="feedback-message" class="alert alert-danger py-1 px-2 mt-1 mb-1" style="display: none; font-size: 0.85rem;">
+                Este componente já foi adicionado.
+            </div>
+            
+            <div id="componentes-container">
+                <!-- Os componentes serão adicionados aqui dinamicamente -->
+            </div>
+            
+            <!-- Campo oculto para armazenar os componentes em formato JSON -->
+            <input type="hidden" id="componentes_json" name="componentes_json" value="[]">
+            
+            <div class="d-flex justify-content-end mt-1">
+                <a href="{{ url_for('listar_produtos') }}" class="btn btn-secondary btn-sm me-1">Cancelar</a>
+                <button type="submit" class="btn btn-primary btn-sm">Salvar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Template para novo componente (será clonado via JavaScript) -->
+<template id="componente-template">
+    <div class="componente-item">
+        <div class="row componente-row g-1">
+            <div class="col-md-6 mb-1">
+                <label class="componente-label">Componente</label>
+                <input type="text" class="form-control componente-nome form-control-sm" readonly>
+                <input type="hidden" class="componente-codigo">
+            </div>
+            <div class="col-md-5 mb-1">
+                <label class="componente-label">Quantidade</label>
+                <input type="number" class="form-control componente-quantidade form-control-sm" min="1" value="1" required>
+            </div>
+        </div>
+        <span class="remove-componente"><i class="fas fa-times-circle"></i></span>
+    </div>
+</template>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// @ts-nocheck
+document.addEventListener('DOMContentLoaded', function() {
+    const componentesContainer = document.getElementById('componentes-container');
+    const addComponenteBtn = document.getElementById('addComponente');
+    const componenteTemplate = document.getElementById('componente-template');
+    const componentesJsonInput = document.getElementById('componentes_json');
+    const form = document.getElementById('produtoForm');
+    const componenteSelect = document.getElementById('componente-select');
+    const componenteQuantidade = document.getElementById('componente-quantidade');
+    const feedbackMessage = document.getElementById('feedback-message');
+    
+    // Lista para manter os códigos dos componentes já adicionados
+    const componentesAdicionados = new Set();
+    
+    // Componentes existentes do produto
+    const componentesExistentes = [
+        {% for comp in componentes_produto %}
+        {
+            codigo: "{{ comp.codigo_componente }}",
+            nome: "{{ comp.nome }}",
+            quantidade: {{ comp.quantidade }}
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    // Mapeamento de componentes para referência rápida
+    const componentesMap = {};
+    {% for componente in componentes %}
+    componentesMap["{{ componente.codigo }}"] = "{{ componente.nome }}";
+    {% endfor %}
+    
+    // Função para adicionar um novo componente
+    function adicionarComponente(codigo, nome, quantidade) {
+        // Verificar se o componente já existe
+        if (componentesAdicionados.has(codigo)) {
+            feedbackMessage.textContent = `Componente "${nome}" já foi adicionado.`;
+            feedbackMessage.style.display = 'block';
+            setTimeout(() => {
+                feedbackMessage.style.display = 'none';
+            }, 3000);
+            return false;
+        }
+        
+        const novoComponente = document.importNode(componenteTemplate.content, true).firstElementChild;
+        
+        // Preencher os campos
+        const codigoInput = novoComponente.querySelector('.componente-codigo');
+        const nomeInput = novoComponente.querySelector('.componente-nome');
+        const quantidadeInput = novoComponente.querySelector('.componente-quantidade');
+        
+        codigoInput.value = codigo;
+        nomeInput.value = nome;
+        quantidadeInput.value = quantidade;
+        
+        // Adicionar evento para remover o componente
+        const removeBtn = novoComponente.querySelector('.remove-componente');
+        removeBtn.addEventListener('click', function() {
+            componentesAdicionados.delete(codigo);
+            novoComponente.remove();
+            atualizarComponentesJson();
+        });
+        
+        // Adicionar eventos para atualizar o JSON quando os valores mudarem
+        quantidadeInput.addEventListener('change', atualizarComponentesJson);
+        
+        componentesContainer.appendChild(novoComponente);
+        componentesAdicionados.add(codigo);
+        atualizarComponentesJson();
+        
+        return true;
+    }
+    
+    // Função para atualizar o campo JSON com os componentes selecionados
+    function atualizarComponentesJson() {
+        const componentes = [];
+        
+        // Selecionar todos os itens de componente
+        const itens = componentesContainer.querySelectorAll('.componente-item');
+        
+        itens.forEach(item => {
+            const codigo = item.querySelector('.componente-codigo').value;
+            const quantidade = item.querySelector('.componente-quantidade').value;
+            
+            if (codigo) {
+                componentes.push({
+                    codigo: codigo,
+                    quantidade: parseInt(quantidade) || 1
+                });
+            }
+        });
+        
+        // Atualizar o campo oculto com o JSON
+        componentesJsonInput.value = JSON.stringify(componentes);
+    }
+    
+    // Adicionar evento ao botão de adicionar componente
+    addComponenteBtn.addEventListener('click', function() {
+        const codigo = componenteSelect.value;
+        const quantidade = parseInt(componenteQuantidade.value) || 1;
+        
+        if (!codigo) {
+            alert('Por favor, selecione um componente.');
+            return;
+        }
+        
+        const nome = componentesMap[codigo];
+        
+        if (adicionarComponente(codigo, nome, quantidade)) {
+            // Limpar o formulário após adicionar com sucesso
+            componenteSelect.value = '';
+            componenteQuantidade.value = '1';
+        }
+    });
+    
+    // Validar o formulário antes de enviar
+    form.addEventListener('submit', function(event) {
+        const componentes = JSON.parse(componentesJsonInput.value);
+        
+        if (componentes.length === 0) {
+            event.preventDefault();
+            alert('Adicione pelo menos um componente ao produto.');
+            return;
+        }
+        
+        // Capitaliza a primeira letra do nome
+        const nomeInput = document.getElementById('nome');
+        if (nomeInput.value) {
+            nomeInput.value = nomeInput.value.charAt(0).toUpperCase() + nomeInput.value.slice(1);
+        }
+    });
+    
+    // Adicionar os componentes existentes
+    if (componentesExistentes.length > 0) {
+        componentesExistentes.forEach(comp => {
+            adicionarComponente(comp.codigo, comp.nome, comp.quantidade);
+        });
+    }
+});
+</script>
+{% endblock %}
