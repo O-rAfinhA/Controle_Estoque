@@ -1300,12 +1300,8 @@ def registrar_entrada():
         
         conn.close()
     
-    conn = get_db_connection()
-    # Garantir que componentes sejam ordenados por código numericamente
-    componentes = conn.execute('SELECT codigo, nome, quantidade FROM componentes ORDER BY CAST(codigo AS INTEGER) ASC').fetchall()
-    conn.close()
-    
-    return render_template('entrada.html', componentes=componentes)
+    # Para método GET, apenas renderiza o template sem passar a lista de componentes
+    return render_template('entrada.html')
 
 @app.route('/transacoes/entrada_produto', methods=['POST'])
 @login_required
@@ -1393,12 +1389,8 @@ def registrar_saida():
         
         conn.close()
     
-    conn = get_db_connection()
-    # Garantir que componentes sejam ordenados por código numericamente
-    componentes = conn.execute('SELECT codigo, nome, quantidade FROM componentes ORDER BY CAST(codigo AS INTEGER) ASC').fetchall()
-    conn.close()
-    
-    return render_template('saida.html', componentes=componentes)
+    # Para método GET, apenas renderiza o template sem passar a lista de componentes
+    return render_template('saida.html')
 
 @app.route('/transacoes/saida_produto', methods=['POST'])
 @login_required
@@ -1958,8 +1950,20 @@ def check_name():
 @login_required
 def api_componentes():
     """API para buscar componentes"""
+    termo = request.args.get('termo', '').strip()
+    
     conn = get_db_connection()
-    componentes = conn.execute('SELECT codigo, nome, quantidade FROM componentes ORDER BY nome').fetchall()
+    
+    if termo:
+        # Se foi informado um termo, filtra os resultados
+        componentes = conn.execute(
+            'SELECT codigo, nome, quantidade FROM componentes WHERE codigo LIKE ? OR UPPER(nome) LIKE UPPER(?) ORDER BY nome', 
+            (f'%{termo}%', f'%{termo}%')
+        ).fetchall()
+    else:
+        # Se não foi informado um termo, retorna todos os componentes
+        componentes = conn.execute('SELECT codigo, nome, quantidade FROM componentes ORDER BY nome').fetchall()
+    
     conn.close()
     
     # Converte para lista de dicionários

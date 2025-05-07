@@ -182,18 +182,7 @@
     </div>
 </div>
 
-<!-- Dados dos componentes em formato JSON para JavaScript -->
-<script id="componentes-data" type="application/json">
-[
-    {% for componente in componentes %}
-    {
-        "codigo": "{{ componente.codigo }}",
-        "nome": "{{ componente.nome }}",
-        "quantidade": {% if componente.quantidade is defined %}{{ componente.quantidade }}{% else %}0{% endif %}
-    }{% if not loop.last %},{% endif %}
-    {% endfor %}
-]
-</script>
+<!-- Dados dos componentes em formato JSON para JavaScript - Removido para usar AJAX -->
 {% endblock %}
 
 {% block scripts %}
@@ -216,17 +205,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const limparSelecao = document.getElementById('limparSelecao');
     const quantidadeInput = document.getElementById('quantidade');
     
-    // Carregar componentes do elemento JSON
-    let componentes = [];
-    try {
-        const componentesJson = document.getElementById('componentes-data').textContent;
-        componentes = JSON.parse(componentesJson);
-    } catch (e) {
-        console.error("Erro ao carregar componentes:", e);
-        componentes = [];
-    }
-    
-    // Função para buscar componentes
+    // Função para buscar componentes - Agora usando AJAX
     function buscarComponentes() {
         const termo = searchInput.value.toLowerCase().trim();
         
@@ -240,63 +219,84 @@ document.addEventListener('DOMContentLoaded', function() {
         resultadoBusca.style.display = 'block';
         mensagemInicial.style.display = 'none';
         
-        // Filtrar componentes pelo termo de busca
-        let resultados = componentes.filter(comp => 
-            comp.codigo.toLowerCase().includes(termo) || 
-            comp.nome.toLowerCase().includes(termo)
-        );
+        // Mostrar loading
+        tabelaResultados.innerHTML = `
+            <tr>
+                <td colspan="3" class="text-center py-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Carregando...</span>
+                    </div>
+                    <p class="mb-0 mt-2">Buscando componentes...</p>
+                </td>
+            </tr>
+        `;
         
-        // Atualizar contador e limpar tabela
-        contadorResultados.textContent = resultados.length;
-        tabelaResultados.innerHTML = '';
-        
-        // Preencher a tabela com os resultados
-        if (resultados.length > 0) {
-            resultados.forEach(comp => {
-                // Verificar se o componente tem estoque
-                const temEstoque = parseInt(comp.quantidade) > 0;
+        // Fazer requisição AJAX para buscar componentes
+        fetch(`/api/componentes?termo=${encodeURIComponent(termo)}`)
+            .then(response => response.json())
+            .then(resultados => {
+                // Atualizar contador e limpar tabela
+                contadorResultados.textContent = resultados.length;
+                tabelaResultados.innerHTML = '';
                 
-                const tr = document.createElement('tr');
-                
-                // Adicionar classe disponível/indisponível com base no estoque
-                if (temEstoque) {
-                    tr.classList.add('disponivel');
-                } else {
-                    tr.classList.add('indisponivel');
-                }
-                
-                tr.innerHTML = `
-                    <td>${comp.codigo}</td>
-                    <td>${comp.nome}</td>
-                    <td class="text-center">
-                        <span class="quantidade-badge ${temEstoque ? 'quantidade-disponivel' : 'quantidade-indisponivel'}">${comp.quantidade}</span>
-                    </td>
-                `;
-                
-                // Adicionar dados ao elemento da linha
-                tr.dataset.codigo = comp.codigo;
-                tr.dataset.nome = comp.nome;
-                tr.dataset.quantidade = comp.quantidade;
-                
-                // Adicionar evento de clique apenas se tiver estoque
-                if (temEstoque) {
-                    tr.addEventListener('click', function() {
-                        selecionarComponente(this);
+                // Preencher a tabela com os resultados
+                if (resultados.length > 0) {
+                    resultados.forEach(comp => {
+                        // Verificar se o componente tem estoque
+                        const temEstoque = parseInt(comp.quantidade) > 0;
+                        
+                        const tr = document.createElement('tr');
+                        
+                        // Adicionar classe disponível/indisponível com base no estoque
+                        if (temEstoque) {
+                            tr.classList.add('disponivel');
+                        } else {
+                            tr.classList.add('indisponivel');
+                        }
+                        
+                        tr.innerHTML = `
+                            <td>${comp.codigo}</td>
+                            <td>${comp.nome}</td>
+                            <td class="text-center">
+                                <span class="quantidade-badge ${temEstoque ? 'quantidade-disponivel' : 'quantidade-indisponivel'}">${comp.quantidade}</span>
+                            </td>
+                        `;
+                        
+                        // Adicionar dados ao elemento da linha
+                        tr.dataset.codigo = comp.codigo;
+                        tr.dataset.nome = comp.nome;
+                        tr.dataset.quantidade = comp.quantidade;
+                        
+                        // Adicionar evento de clique apenas se tiver estoque
+                        if (temEstoque) {
+                            tr.addEventListener('click', function() {
+                                selecionarComponente(this);
+                            });
+                        }
+                        
+                        tabelaResultados.appendChild(tr);
                     });
+                } else {
+                    // Exibir mensagem quando não há resultados
+                    tabelaResultados.innerHTML = `
+                        <tr>
+                            <td colspan="3" class="text-center py-3">
+                                <i class="fas fa-info-circle me-2"></i>Nenhum componente encontrado com o termo "${termo}".
+                            </td>
+                        </tr>
+                    `;
                 }
-                
-                tabelaResultados.appendChild(tr);
+            })
+            .catch(error => {
+                console.error('Erro ao buscar componentes:', error);
+                tabelaResultados.innerHTML = `
+                    <tr>
+                        <td colspan="3" class="text-center py-3">
+                            <i class="fas fa-exclamation-triangle me-2 text-danger"></i>Erro ao buscar componentes. Tente novamente.
+                        </td>
+                    </tr>
+                `;
             });
-        } else {
-            // Exibir mensagem quando não há resultados
-            tabelaResultados.innerHTML = `
-                <tr>
-                    <td colspan="3" class="text-center py-3">
-                        <i class="fas fa-info-circle me-2"></i>Nenhum componente encontrado com o termo "${termo}".
-                    </td>
-                </tr>
-            `;
-        }
     }
     
     // Função para selecionar um componente
@@ -383,24 +383,32 @@ document.addEventListener('DOMContentLoaded', function() {
     const codigoParam = urlParams.get('codigo');
     
     if (codigoParam) {
-        const componenteEncontrado = componentes.find(comp => comp.codigo === codigoParam);
-        if (componenteEncontrado && parseInt(componenteEncontrado.quantidade) > 0) {
-            // Preencher o formulário com o componente da URL
-            codigoInput.value = componenteEncontrado.codigo;
-            nomeComponenteSpan.textContent = componenteEncontrado.nome;
-            codigoComponenteSpan.textContent = componenteEncontrado.codigo;
-            quantidadeAtualSpan.textContent = componenteEncontrado.quantidade;
-            
-            // Limitar a quantidade máxima que pode ser retirada
-            quantidadeInput.max = componenteEncontrado.quantidade;
-            
-            // Exibir o bloco de componente selecionado
-            componenteSelecionado.style.display = 'block';
-            mensagemInicial.style.display = 'none';
-            
-            // Habilitar o botão de envio
-            btnSubmit.disabled = false;
-        }
+        // Fazer requisição para buscar o componente específico
+        fetch(`/api/componentes?termo=${encodeURIComponent(codigoParam)}`)
+            .then(response => response.json())
+            .then(componentes => {
+                const componenteEncontrado = componentes.find(comp => comp.codigo === codigoParam);
+                if (componenteEncontrado && parseInt(componenteEncontrado.quantidade) > 0) {
+                    // Preencher o formulário com o componente da URL
+                    codigoInput.value = componenteEncontrado.codigo;
+                    nomeComponenteSpan.textContent = componenteEncontrado.nome;
+                    codigoComponenteSpan.textContent = componenteEncontrado.codigo;
+                    quantidadeAtualSpan.textContent = componenteEncontrado.quantidade;
+                    
+                    // Limitar a quantidade máxima que pode ser retirada
+                    quantidadeInput.max = componenteEncontrado.quantidade;
+                    
+                    // Exibir o bloco de componente selecionado
+                    componenteSelecionado.style.display = 'block';
+                    mensagemInicial.style.display = 'none';
+                    
+                    // Habilitar o botão de envio
+                    btnSubmit.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao buscar componente por código:', error);
+            });
     }
 });
 </script>
