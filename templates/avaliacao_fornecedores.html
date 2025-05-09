@@ -1406,11 +1406,47 @@
                 
                 confirmDeleteBtn.setAttribute('data-fornecedor-id', fornecedorId);
                 
+                // Verificar quantos recebimentos estão associados
+                contarRecebimentosAssociados(fornecedorId);
+                
                 // Abrir o modal de confirmação
                 const modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
                 modal.show();
             });
         });
+        
+        // Função para contar recebimentos associados a um fornecedor
+        function contarRecebimentosAssociados(fornecedorId) {
+            const recebimentosInfo = document.getElementById('recebimentosAssociados');
+            const loadingIndicator = document.createElement('span');
+            loadingIndicator.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Verificando recebimentos...';
+            
+            if (recebimentosInfo) {
+                recebimentosInfo.innerHTML = '';
+                recebimentosInfo.appendChild(loadingIndicator);
+                recebimentosInfo.style.display = 'block';
+            }
+            
+            // Fazer requisição AJAX para a API
+            fetch(`/api/fornecedor/${fornecedorId}/recebimentos/count`)
+                .then(response => response.json())
+                .then(data => {
+                    if (recebimentosInfo) {
+                        if (data.count > 0) {
+                            recebimentosInfo.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i>Este fornecedor possui <strong>${data.count} recebimento(s)</strong> que também será(ão) excluído(s).`;
+                            recebimentosInfo.style.display = 'block';
+                        } else {
+                            recebimentosInfo.style.display = 'none';
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao contar recebimentos:', error);
+                    if (recebimentosInfo) {
+                        recebimentosInfo.style.display = 'none';
+                    }
+                });
+        }
         
         // Inicializar paginação para recebimentos com 10 itens por página
         const recebimentosTabela = document.getElementById('recebimentosTable');
@@ -1809,6 +1845,11 @@
             </div>
             <div class="modal-body">
                 <p>Você tem certeza que deseja excluir o fornecedor <strong id="deleteFornecedorNome"></strong>?</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <strong>Atenção:</strong> Todos os recebimentos associados a este fornecedor também serão excluídos!
+                </div>
+                <p id="recebimentosAssociados" class="text-warning mt-2" style="display: none;"></p>
                 <p class="text-danger"><i class="fas fa-exclamation-circle"></i> Esta ação não pode ser desfeita!</p>
             </div>
             <div class="modal-footer">

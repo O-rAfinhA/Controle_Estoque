@@ -31,11 +31,11 @@
                     <tbody>
                         {% for fornecedor in fornecedores %}
                         <tr>
-                            <td>{{ fornecedor.nome }}</td>
-                            <td>{{ fornecedor.cnpj }}</td>
-                            <td>{{ fornecedor.contato }}</td>
-                            <td>{{ fornecedor.email }}</td>
-                            <td>{{ fornecedor.telefone }}</td>
+                            <td title="{{ fornecedor.nome }}">{{ fornecedor.nome }}</td>
+                            <td title="{{ fornecedor.cnpj }}">{{ fornecedor.cnpj }}</td>
+                            <td title="{{ fornecedor.contato }}">{{ fornecedor.contato }}</td>
+                            <td title="{{ fornecedor.email }}">{{ fornecedor.email }}</td>
+                            <td title="{{ fornecedor.telefone }}">{{ fornecedor.telefone }}</td>
                             <td>
                                 <span class="badge bg-{{ 'success' if fornecedor.ativo else 'secondary' }}">
                                     {{ 'Ativo' if fornecedor.ativo else 'Inativo' }}

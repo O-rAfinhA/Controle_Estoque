@@ -29,8 +29,8 @@
                     <tbody>
                         {% for usuario in usuarios %}
                         <tr>
-                            <td>{{ usuario.nome }}</td>
-                            <td>{{ usuario.email }}</td>
+                            <td title="{{ usuario.nome }}">{{ usuario.nome }}</td>
+                            <td title="{{ usuario.email }}">{{ usuario.email }}</td>
                             <td>{{ usuario.perfil }}</td>
                             <td>
                                 <span class="badge bg-{{ 'success' if usuario.ativo else 'secondary' }}">

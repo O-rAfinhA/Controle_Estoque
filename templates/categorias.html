@@ -28,8 +28,8 @@
                     <tbody>
                         {% for categoria in categorias %}
                         <tr>
-                            <td>{{ categoria.nome }}</td>
-                            <td>{{ categoria.descricao }}</td>
+                            <td title="{{ categoria.nome }}">{{ categoria.nome }}</td>
+                            <td title="{{ categoria.descricao }}">{{ categoria.descricao }}</td>
                             <td>
                                 <span class="badge bg-{{ 'success' if categoria.ativa else 'secondary' }}">
                                     {{ 'Ativa' if categoria.ativa else 'Inativa' }}
