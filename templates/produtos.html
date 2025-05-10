@@ -445,8 +445,8 @@
                     <tbody>
                         {% for produto in produtos %}
                         <tr data-produto-id="{{ produto.id }}">
-                            <td class="border-end">{{ produto.nome }}</td>
-                            <td class="border-end">{{ produto.descricao }}</td>
+                            <td class="border-end" title="{{ produto.nome }}">{{ produto.nome }}</td>
+                            <td class="border-end" title="{{ produto.descricao }}">{{ produto.descricao }}</td>
                             <td class="border-end">
                                 <button type="button" class="btn btn-sm btn-info ver-componentes" data-produto-id="{{ produto.id }}">
                                     <i class="fas fa-list"></i> Ver componentes
@@ -1366,7 +1366,7 @@
                             active.style.backgroundColor = 'white';
                             suggestions[prevIndex].classList.add('active');
                             suggestions[prevIndex].style.backgroundColor = '#e9ecef';
-                }
+                        }
                     }
                 }
                 
@@ -1376,8 +1376,8 @@
                     componenteInput.value = active.getAttribute('data-nome');
                     componenteSelecionado = active.getAttribute('data-codigo');
                     componenteSuggestions.classList.add('d-none');
-        }
-        
+                }
+                
                 // Escape para fechar
                 else if (e.key === 'Escape') {
                     componenteSuggestions.classList.add('d-none');
@@ -1626,6 +1626,57 @@
                     nomeInput.focus();
                 });
         }
+
+        // Função para aplicar title às células de nome
+        function aplicarTitle() {
+            // Para todas as células da coluna Nome na tabela principal
+            document.querySelectorAll('#tabelaProdutos tbody td:nth-child(1)').forEach(cell => {
+                if (!cell.hasAttribute('title')) {
+                    cell.setAttribute('title', cell.textContent.trim());
+                }
+            });
+            
+            // Para todas as células da coluna Cliente na tabela principal
+            document.querySelectorAll('#tabelaProdutos tbody td:nth-child(2)').forEach(cell => {
+                if (!cell.hasAttribute('title')) {
+                    cell.setAttribute('title', cell.textContent.trim());
+                }
+            });
+            
+            // Para tabelas de componentes (podem ser geradas dinamicamente)
+            document.querySelectorAll('#componentes-lista tr td:nth-child(2), #edit-componentes-lista tr td:nth-child(2)').forEach(cell => {
+                if (!cell.hasAttribute('title')) {
+                    cell.setAttribute('title', cell.textContent.trim());
+                }
+            });
+        }
+        
+        // Aplicar title inicialmente
+        document.addEventListener('DOMContentLoaded', function() {
+            aplicarTitle();
+            
+            // Observar mudanças nas tabelas para aplicar o title em elementos novos
+            const observer = new MutationObserver(function(mutations) {
+                aplicarTitle();
+            });
+            
+            // Observar a tabela principal e as tabelas de componentes
+            const tabelaProdutos = document.getElementById('tabelaProdutos');
+            const tabelaComponentes = document.getElementById('tabela-componentes');
+            const editTabelaComponentes = document.getElementById('edit-tabela-componentes');
+            
+            if (tabelaProdutos) {
+                observer.observe(tabelaProdutos, { childList: true, subtree: true });
+            }
+            
+            if (tabelaComponentes) {
+                observer.observe(tabelaComponentes, { childList: true, subtree: true });
+            }
+            
+            if (editTabelaComponentes) {
+                observer.observe(editTabelaComponentes, { childList: true, subtree: true });
+            }
+        });
     });
 
     // Função para inicializar a paginação

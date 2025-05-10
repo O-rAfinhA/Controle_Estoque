@@ -38,7 +38,7 @@ from reportlab.lib import colors
 # Ajuste do fuso horário (São Paulo - UTC-3)
 TIMEZONE_OFFSET = 0  # Horas de diferença para o fuso horário de São Paulo
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.config['SECRET_KEY'] = 'seu_segredo_aqui'
 app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 24 horas em segundos
 
@@ -2242,20 +2242,25 @@ def excluir_fornecedor(id):
     """Excluir um fornecedor"""
     conn = get_db_connection()
     
-    # Verificar se existem recebimentos associados a este fornecedor
-    recebimentos = conn.execute('SELECT * FROM recebimentos WHERE fornecedor_id = ?', (id,)).fetchall()
-    
-    if recebimentos:
-        flash('Não é possível excluir este fornecedor pois existem recebimentos associados a ele!', 'danger')
+    try:
+        # Verificar se existem recebimentos associados a este fornecedor
+        recebimentos = conn.execute('SELECT * FROM recebimentos WHERE fornecedor_id = ?', (id,)).fetchall()
+        
+        if recebimentos:
+            # Excluir todos os recebimentos associados a este fornecedor
+            conn.execute('DELETE FROM recebimentos WHERE fornecedor_id = ?', (id,))
+            
+        # Excluir o fornecedor
+        conn.execute('DELETE FROM fornecedores WHERE id = ?', (id,))
+        conn.commit()
+        
+        flash('Fornecedor excluído com sucesso!', 'success')
+    except Exception as e:
+        conn.rollback()
+        flash(f'Erro ao excluir fornecedor: {str(e)}', 'danger')
+    finally:
         conn.close()
-        return redirect(url_for('avaliacao_fornecedores', tab='fornecedores'))
     
-    # Excluir o fornecedor
-    conn.execute('DELETE FROM fornecedores WHERE id = ?', (id,))
-    conn.commit()
-    conn.close()
-    
-    flash('Fornecedor excluído com sucesso!', 'success')
     return redirect(url_for('avaliacao_fornecedores', tab='fornecedores'))
 
 @app.route('/avaliacao-fornecedores/adicionar-recebimento', methods=['POST'])
@@ -3899,6 +3904,16 @@ def admin_bot_control():
         keys_configured=keys_configured,
         bot_mode=bot_mode
     )
+
+@app.route('/api/fornecedor/<int:id>/recebimentos/count', methods=['GET'])
+@login_required
+def contar_recebimentos_fornecedor(id):
+    """Retorna a contagem de recebimentos de um fornecedor"""
+    conn = get_db_connection()
+    count = conn.execute('SELECT COUNT(*) as total FROM recebimentos WHERE fornecedor_id = ?', (id,)).fetchone()['total']
+    conn.close()
+    
+    return jsonify({'count': count})
 
 if __name__ == '__main__':
     # Configuração para desenvolvimento (quando executado diretamente)

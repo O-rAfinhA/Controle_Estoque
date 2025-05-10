@@ -35,6 +35,26 @@
         text-shadow: 0 0 5px rgba(255, 255, 255, 0.5) !important;
     }
     
+    /* Garantir que títulos de colunas tenham tamanho adequado */
+    .table th, 
+    table th, 
+    thead th, 
+    .table thead tr th, 
+    .table-responsive thead th {
+        font-size: 0.82rem !important;
+        font-weight: 600 !important;
+        padding: 0.7rem 0.6rem !important;
+    }
+    
+    /* Garantir que o conteúdo das células tenha tamanho adequado */
+    .table td,
+    table td,
+    tbody td,
+    .table tbody tr td {
+        font-size: 0.85rem !important;
+        padding: 0.6rem !important;
+    }
+    
     /* Estilos para mensagens de sistema em páginas com fundo escuro */
     .bg-dark .alert,
     .bg-dark .flash-message,
@@ -74,8 +94,7 @@
     /* Exceção para ícones FontAwesome para permitir que eles sejam renderizados */
     .fas::before, .fas::after,
     .fa::before, .fa::after,
-    .fab::before, .fab::after,
-    .far::before, .far::after {
+    .fab::before, .fab::after {
         content: inherit !important;
         display: inline-block !important;
         font-style: normal !important;
@@ -515,5 +534,54 @@
     <script src="{{ url_for('static', filename='js/fix-headers.js') }}"></script>
     
     {% block scripts %}{% endblock %}
+
+    <script>
+        // Script global para aplicar o atributo title em todas as tabelas
+        document.addEventListener('DOMContentLoaded', function() {
+            // Função para aplicar title às células das colunas de nome e produtos
+            function aplicarTitleNasCelulas() {
+                // Seletor para colunas que podem conter texto truncado (primeira e segunda coluna)
+                const celulas = document.querySelectorAll('.table td:nth-child(1), .table td:nth-child(2)');
+                
+                celulas.forEach(function(celula) {
+                    // Apenas define o title se ele ainda não existir
+                    if (!celula.hasAttribute('title')) {
+                        celula.setAttribute('title', celula.textContent.trim());
+                    }
+                });
+            }
+            
+            // Função para garantir o tamanho de fonte correto
+            function aplicarFonteSizeNasCelulas() {
+                // Seletor para todas as células de tabela
+                const celulasTodas = document.querySelectorAll('table td, .table td, tbody td');
+                
+                celulasTodas.forEach(function(celula) {
+                    // Aplicar tamanho de fonte com maior prioridade
+                    celula.style.fontSize = '0.85rem';
+                });
+            }
+            
+            // Executar na inicialização
+            aplicarTitleNasCelulas();
+            aplicarFonteSizeNasCelulas();
+            
+            // Observar mudanças no DOM para aplicar em elementos adicionados dinamicamente
+            const observer = new MutationObserver(function(mutations) {
+                aplicarTitleNasCelulas();
+                aplicarFonteSizeNasCelulas();
+            });
+            
+            // Configurar o observer para monitorar tabelas
+            const tabelas = document.querySelectorAll('.table-responsive, .table');
+            
+            tabelas.forEach(function(tabela) {
+                observer.observe(tabela, { 
+                    childList: true, 
+                    subtree: true 
+                });
+            });
+        });
+    </script>
 </body>
 </html>

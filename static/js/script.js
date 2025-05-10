@@ -97,6 +97,31 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // Função para melhorar a experiência do usuário com tooltips
+    function aplicarTitleEmTabelas() {
+        // Selecionar todas as células da primeira e segunda coluna em todas as tabelas
+        const celulas = document.querySelectorAll('.table td:nth-child(1), .table td:nth-child(2)');
+        
+        celulas.forEach(function(celula) {
+            const conteudo = celula.textContent.trim();
+            
+            // Verificar se o conteúdo é longo o suficiente para ser truncado
+            if (conteudo.length > 20) {
+                // Adicionar ou atualizar o atributo title
+                celula.setAttribute('title', conteudo);
+                
+                // Adicionar classe para identificar células com título
+                celula.classList.add('has-title');
+                
+                // Verificar se o conteúdo está sendo truncado
+                const isTruncated = celula.offsetWidth < celula.scrollWidth;
+                if (isTruncated) {
+                    celula.classList.add('is-truncated');
+                }
+            }
+        });
+    }
+    
     // Executar as funções
     highlightNewItems();
     enhanceScrollExperience();
@@ -110,6 +135,42 @@ document.addEventListener('DOMContentLoaded', function() {
         if (tabela) {
             const linhas = tabela.querySelectorAll('tbody tr');
             inicializarPaginacao(linhas, paginacao, 10);
+        }
+    });
+    
+    // Executar a função quando o DOM estiver pronto
+    aplicarTitleEmTabelas();
+    
+    // Executar novamente quando as tabelas forem atualizadas
+    // Usamos um MutationObserver para detectar mudanças no DOM
+    const observer = new MutationObserver(function(mutations) {
+        // Verificar se alguma das mutações afeta tabelas
+        const afetaTabelas = mutations.some(function(mutation) {
+            return mutation.target.classList.contains('table') || 
+                  mutation.target.closest('.table') !== null ||
+                  mutation.target.querySelectorAll('.table').length > 0;
+        });
+        
+        if (afetaTabelas) {
+            // Aguardar um pouco para garantir que o DOM foi atualizado completamente
+            setTimeout(aplicarTitleEmTabelas, 50);
+        }
+    });
+    
+    // Configurar o observer para monitorar todo o documento
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+    
+    // Adicionar evento de mouseover para melhorar a visibilidade do texto truncado
+    document.body.addEventListener('mouseover', function(event) {
+        const target = event.target;
+        
+        // Verificar se o elemento alvo é uma célula com título
+        if (target.classList.contains('has-title') && target.classList.contains('is-truncated')) {
+            // Garantir que o cursor indique que há um tooltip
+            target.style.cursor = 'help';
         }
     });
 });
