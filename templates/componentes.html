@@ -311,14 +311,23 @@
                     </td>
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-2">
-                                    <a href="#" class="action-icon edit-icon edit-componente" data-bs-toggle="modal" data-bs-target="#modalEditarComponente" data-componente-codigo="{{ componente.codigo }}" data-componente-nome="{{ componente.nome }}" data-componente-quantidade="{{ componente.quantidade }}" title="Editar">
+                                    <a href="#" class="action-icon edit-icon edit-componente" 
+                                       data-bs-toggle="modal" 
+                                       data-bs-target="#modalEditarComponente" 
+                                       data-componente-codigo="{{ componente.codigo }}" 
+                                       data-componente-nome="{{ componente.nome }}" 
+                                       data-componente-quantidade="{{ componente.quantidade }}" 
+                                       title="Editar">
                                         <i class="fa fa-edit"></i>
                                     </a>
-                                    <a href="#" class="action-icon delete-icon delete-componente" data-componente-codigo="{{ componente.codigo }}" data-componente-nome="{{ componente.nome }}" title="Excluir">
+                                    <a href="#" class="action-icon delete-icon delete-componente" 
+                                       data-componente-codigo="{{ componente.codigo }}" 
+                                       data-componente-nome="{{ componente.nome }}" 
+                                       title="Excluir">
                                         <i class="fa fa-trash"></i>
                                     </a>
-                        </div>
-                    </td>
+                                </div>
+                            </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -808,27 +817,43 @@
                     const nome = this.getAttribute('data-componente-nome');
                     const quantidade = this.getAttribute('data-componente-quantidade');
                     
+                    console.log('Dados do componente:', { codigo, nome, quantidade }); // Debug
+                    
+                    // Preencher os campos do formulário
                     document.getElementById('editComponenteCodigoOriginal').value = codigo;
                     document.getElementById('editQuantidadeOriginal').value = quantidade;
                     document.getElementById('editCodigo').value = codigo;
                     document.getElementById('editNome').value = nome;
                     document.getElementById('editQuantidade').value = quantidade;
+                    
+                    // Limpar qualquer alerta anterior
+                    const alertaConfirmacao = document.getElementById('alertaConfirmacao');
+                    if (alertaConfirmacao) {
+                        alertaConfirmacao.style.display = 'none';
+                    }
                 });
             });
             
             // Event listener para o botão de atualizar componente
             const btnAtualizarComponente = document.getElementById('btnAtualizarComponente');
             if (btnAtualizarComponente) {
-                btnAtualizarComponente.addEventListener('click', verificarEAtualizar);
+                btnAtualizarComponente.addEventListener('click', function() {
+                    console.log('Botão Atualizar clicado'); // Debug
+                    verificarEAtualizar();
+                });
             }
             
             // Função para verificar alterações antes de atualizar
             async function verificarEAtualizar() {
+                console.log('Iniciando verificação de atualização'); // Debug
+                
                 const codigoOriginal = document.getElementById('editComponenteCodigoOriginal').value;
                 const quantidadeOriginal = document.getElementById('editQuantidadeOriginal').value;
                 const codigo = document.getElementById('editCodigo').value.trim();
                 const nome = document.getElementById('editNome').value.trim();
                 const quantidade = document.getElementById('editQuantidade').value;
+                
+                console.log('Valores coletados:', { codigoOriginal, quantidadeOriginal, codigo, nome, quantidade }); // Debug
                 
                 if (!codigo || !nome || !quantidade) {
                     alert('Por favor, preencha todos os campos obrigatórios.');
@@ -843,6 +868,8 @@
                 
                 const codigoAlterado = codigo !== codigoOriginal;
                 const quantidadeAlterada = parseInt(quantidade) !== parseInt(quantidadeOriginal);
+                
+                console.log('Alterações detectadas:', { codigoAlterado, quantidadeAlterada }); // Debug
                 
                 // Verificar se o código ou nome já existem (apenas se foram alterados)
                 if (codigoAlterado) {
@@ -878,6 +905,26 @@
                     }
                 }
                 
+                // Criar um formulário para enviar a atualização
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/componentes/editar/${codigoOriginal}`;
+                form.style.display = 'none';
+                
+                // Adicionar os campos ao formulário
+                const addField = (name, value) => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = name;
+                    input.value = value;
+                    form.appendChild(input);
+                };
+                
+                addField('nome', nome);
+                addField('quantidade', quantidade);
+                addField('novo_codigo', codigo);
+                
+                // Confirmar alterações sensíveis
                 if (codigoAlterado || quantidadeAlterada) {
                     let mensagem = '';
                     
@@ -897,13 +944,24 @@
                     
                     // Configurar botão de confirmação
                     document.getElementById('confirmAlteracaoBtn').onclick = function() {
-                        // Redirecionar para a rota de atualização após confirmação
-                        window.location.href = `/atualizar_componente/${encodeURIComponent(codigoOriginal)}/${encodeURIComponent(codigo)}/${encodeURIComponent(nome)}/${quantidade}`;
+                        // Se alterações de código ou quantidade, adicionar flags de confirmação
+                        if (codigoAlterado) {
+                            addField('confirmar_alteracao', 'true');
+                        }
+                        if (quantidadeAlterada) {
+                            addField('confirmar_quantidade', 'true');
+                        }
+                        
+                        // Adicionar o formulário ao documento e enviar
+                        document.body.appendChild(form);
+                        form.submit();
+                        
                         modal.hide();
                     };
                 } else {
-                    // Se não houver alterações nos campos sensíveis, prosseguir direto
-                    window.location.href = `/atualizar_componente/${encodeURIComponent(codigoOriginal)}/${encodeURIComponent(codigo)}/${encodeURIComponent(nome)}/${quantidade}`;
+                    // Se não houver alterações sensíveis, enviar o formulário diretamente
+                    document.body.appendChild(form);
+                    form.submit();
                 }
             }
             
